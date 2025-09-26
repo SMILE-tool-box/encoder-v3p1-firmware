@@ -114,6 +114,7 @@ architecture Behavioral of RBCP_REG is
     signal  LatchUp_DetectOn    : std_logic;
     signal  LatchUp_DetectOff   : std_logic;
     signal  ctrl_flag2          : std_logic;
+    signal  ctrl_flag3          : std_logic;
 
 begin
 
@@ -215,7 +216,7 @@ begin
     elsif clock'event and clock='1' then
         if rbcp_act='1' then
             bufAddr         <= irAddr ( 7 downto 0);
-            bufWe(0)        <= irWe and valid_flag and (not ctrl_flag) and (not ctrl_flag2);
+            bufWe(0)        <= irWe and valid_flag and (not (ctrl_flag or ctrl_flag2 or ctrl_flag3));
             bufDin          <= irWd;
             bufDout         <= regDout;
 			DAC_Data		<= (others => '0');
@@ -308,22 +309,36 @@ begin
     if reset='1' then
             ctrl_flag2          <= '0';
             AP_ON_flag          <= '0';
-            LatchUp_DetectOn    <= '0';
 --            AP_OFF_flag         <= '0';
 	elsif clock'event and clock='1' then
 		if irAddr=x"000000f1" and bufWe="1" then
 			ctrl_flag2          <= '1';
             AP_ON_flag          <= bufDin(0);
-            LatchUp_DetectOn    <= bufDin(1);
 --            AP_OFF_flag         <= bufDin(4);
 		else
 			ctrl_flag2          <= '0';
             AP_ON_flag          <= AP_ON_flag;
-            LatchUp_DetectOn    <= LatchUp_DetectOn;
 --            AP_OFF_flag         <= '0';
 		end if;
 	end if;
 end process;
+
+process (clock, reset)
+begin
+    if reset='1' then
+        ctrl_flag3         <= '0';
+        LatchUp_DetectOn   <= '0';
+    elsif clock'event and clock='1' then
+        if irAddr=x"000000f2" and bufWe="1" then
+            ctrl_flag3         <= '1';
+            LatchUp_DetectOn   <= bufDin(0);
+        else
+            ctrl_flag3         <= '0';
+            LatchUp_DetectOn   <= LatchUp_DetectOn;
+        end if;
+    end if;
+end process;
+    
 
 --process (clock, reset)
 --begin
