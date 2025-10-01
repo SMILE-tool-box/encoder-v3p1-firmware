@@ -440,10 +440,10 @@ begin
         else
             nextState       <= "011";
         end if;
-    when    "010"   =>
-        nextState           <= "110";
     when    "110"   =>
-        if DAC_ctrl_Buf='1' or Vth_ctrl_Buf='1' or ADC_ctrl_Buf='1' then
+        if rbcp_act='1' then
+            nextState       <= "001";   -- prioritize RBCP over run busy
+        elsif DAC_ctrl_Buf='1' or Vth_ctrl_Buf='1' or ADC_ctrl_Buf='1' then
             nextState       <= "100";
         elsif DAC_flag='0' and vth_flag='0' and ADC_BIAS_flag='0' then
             nextState       <= "000";
@@ -451,7 +451,9 @@ begin
             nextState       <= "110";
         end if;
     when    "100"   =>
-        if DAC_ctrl_Buf='0' and Vth_ctrl_Buf='0' and ADC_ctrl_Buf='0' then
+        if rbcp_act='1' then
+            nextState       <= "001";   -- prioritize RBCP over run busy
+        elsif DAC_ctrl_Buf='0' and Vth_ctrl_Buf='0' and ADC_ctrl_Buf='0' then
             nextState       <= "000";
         else
             nextState       <= "100";
