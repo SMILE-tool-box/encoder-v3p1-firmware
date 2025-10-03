@@ -203,7 +203,8 @@ architecture Behavioral of main is
         ADC_BIAS_Ch         : in    std_logic_vector (7 downto 0);
         ADC_BIAS_Data       : out   std_logic_vector (7 downto 0);
         
-        AP_ON               : out   std_logic
+        AP_ON               : out   std_logic;
+        LatchUp_Detect      : out   std_logic
 	);
     end component;
 	
@@ -254,7 +255,10 @@ architecture Behavioral of main is
 		hit_2					: out	std_logic;
 		hit_3					: out	std_logic;
 		addr					: in	unsigned (10 downto 0);
-		dout					: out	std_logic_vector (15 downto 0)
+		dout					: out	std_logic_vector (15 downto 0);
+		LatchUp_Recover		: in	std_logic;
+		LatchUp_Trg			: out	std_logic;
+		LatchUp_Detect		: in	std_logic
     );
     end component;
 
@@ -519,6 +523,26 @@ architecture Behavioral of main is
     signal  Internal_50MHz  : std_logic;
 
 
+    signal  LatchUp_Recover     : std_logic := '0';
+    signal  LatchUp_Detect      : std_logic;
+    signal  LatchUp_Trg         : std_logic_vector (7 downto 0);
+    signal  LatchUp_TrgAll      : std_logic;
+
+    signal  AP_ON_LatchUp       : std_logic;
+    signal  AP_ON_RBCP          : std_logic;
+    signal  LatchUp_AP_RstCnt   : std_logic_vector (27 downto 0) := (others => '0');
+    signal  LatchUp_AP_RstEnd   : std_logic;
+
+    signal  LatchUp_AP_WaitCnt  : std_logic_vector (27 downto 0) := (others => '0');
+    signal  LatchUp_ASICOn      : std_logic;
+
+    signal  DAC_Set_LatchUp     : std_logic;
+    signal  DAC_Set_RBCP        : std_logic;
+    signal  LatchUp_DACRunWait      : std_logic;
+
+
+
+
 
 begin
 
@@ -707,16 +731,6 @@ OSC_BUF:    IBUF
 generic map (   IOSTANDARD  => "LVCMOS33")
 port map    (   O   => Internal_50MHz,    I   => OSC_IN);
 
--- process (SystemRst, dip_sw_data(6))
--- begin
---     if SystemRst='1' then
---         Osc50MHz        <= Internal_50MHz;
---     elsif dip_sw_data(6)='0' then
---         Osc50MHz        <= Internal_50MHz;
---     elsif dip_sw_data(6)='1' then
---         Osc50MHz        <= ExDinReg(0);
---     end if;
--- end process;
 
 process (dip_sw_data(6))
 begin
@@ -726,6 +740,106 @@ begin
         Osc50MHz        <= ExDinReg(0);
     end if;
 end process;
+
+
+------------- Latch Up Recover
+LatchUp_TrgAll  <= '0' when LatchUp_Trg=x"00" else '1';
+AP_ON   <= AP_ON_RBCP and AP_ON_LatchUp;
+
+-- Analog Power Off
+process (clk_100M, SystemRst, LatchUp_Recover)
+begin
+    if SystemRst='1' or LatchUp_Recover='1' then
+        AP_ON_LatchUp           <= '1';
+        LatchUp_AP_RstCnt       <= (others => '0');
+        LatchUp_AP_RstEnd       <= '0';
+    elsif clk_100M'event and clk_100M='1' then
+        if LatchUp_TrgAll = '1' then
+            if LatchUp_AP_RstCnt/=x"fffffff" then
+                AP_ON_LatchUp       <= '0';
+                LatchUp_AP_RstCnt   <= LatchUp_AP_RstCnt + '1';
+            else
+                AP_ON_LatchUp       <= '1';
+                LatchUp_AP_RstEnd   <= '1';
+            end if;
+        else
+            AP_ON_LatchUp       <= '1';
+            LatchUp_AP_RstCnt      <= (others => '0');
+            LatchUp_AP_RstEnd      <= '0';
+        end if;
+    end if;
+end process;
+
+-- Analog Power On & Waiting
+process (clk_100M, SystemRst, LatchUp_Recover)
+begin
+    if SystemRst='1' or LatchUp_Recover='1' then
+        LatchUp_AP_WaitCnt    <= (others => '0');
+        LatchUp_ASICOn      <= '0';
+    elsif clk_100M'event and clk_100M='1' then
+        if LatchUp_AP_RstEnd='1' then
+            if LatchUp_AP_WaitCnt/=x"fffffff" then
+                LatchUp_AP_WaitCnt      <= LatchUp_AP_WaitCnt + '1';
+            else
+                LatchUp_ASICOn      <= '1';
+            end if;
+        else
+            LatchUp_AP_WaitCnt      <= (others => '0');
+            LatchUp_ASICOn          <= '0';
+        end if;
+    end if;
+end process;
+
+
+DAC_Set     <= DAC_Set_RBCP or DAC_Set_LatchUp;
+
+-- ASIC DAC Set
+process (clk_100M, SystemRst, LatchUp_Recover)
+begin
+    if SystemRst='1' or LatchUp_Recover='1' then
+        DAC_Set_LatchUp         <= '0';
+        LatchUp_DACRunWait          <= '0';
+    elsif clk_100M'event and clk_100M='1' then
+        if LatchUp_ASICOn='1' then
+            if LatchUp_DACRunWait='0' and DAC_Run='0' then
+                DAC_Set_LatchUp         <= '1';
+                LatchUp_DACRunWait      <= '1';
+            elsif LatchUp_DACRunWait='1' and DAC_Run='1' then
+                DAC_Set_LatchUp      <= '0';
+            end if;
+        else
+            DAC_Set_LatchUp         <= '0';
+            LatchUp_DACRunWait      <= '0';
+        end if;
+    end if;
+end process;
+
+-- Latch-Up recover process finish
+process (clk_100M, SystemRst)
+begin
+    if SystemRst='1' then
+        LatchUp_Recover         <= '0';
+    elsif clk_100M'event and clk_100M='1' then
+        if LatchUp_DACRunWait='1' and DAC_Set_LatchUp='0' then
+            if DAC_Run='0' then
+                LatchUp_Recover     <= '1';
+            end if;
+        elsif LatchUp_Recover='1' then
+            if LatchUp_TrgAll='0' and LatchUp_AP_RstEnd='0' and LatchUp_ASICOn='0' then
+                LatchUp_Recover     <= '0';
+            end if;
+        end if;
+    end if;
+end process;
+
+
+
+
+
+
+
+
+--------------------------
 
 
 -----  Ring Buffers  -----
@@ -740,7 +854,10 @@ port map (
 	hit_2					=> hit_two (0),
 	hit_3					=> hit_tri (0),
 	addr					=> ReadEncAddr,
-	dout					=> EncData (  15 downto   0)
+	dout					=> EncData (  15 downto   0),
+    LatchUp_Recover     => LatchUp_Recover,
+    LatchUp_Trg         => LatchUp_Trg(0),
+    LatchUp_Detect      => LatchUp_Detect
 );
 
 EncRBuf1	: Encoder
@@ -754,7 +871,10 @@ port map (
 	hit_2					=> hit_two (1),
 	hit_3					=> hit_tri (1),
 	addr					=> ReadEncAddr,
-	dout					=> EncData (  31 downto  16)
+	dout					=> EncData (  31 downto  16),
+    LatchUp_Recover     => LatchUp_Recover,
+    LatchUp_Trg         => LatchUp_Trg(1),
+    LatchUp_Detect      => LatchUp_Detect
 );
 
 EncRBuf2	: Encoder
@@ -768,7 +888,10 @@ port map (
 	hit_2					=> hit_two (2),
 	hit_3					=> hit_tri (2),
 	addr					=> ReadEncAddr,
-	dout					=> EncData (  47 downto  32)
+	dout					=> EncData (  47 downto  32),
+    LatchUp_Recover     => LatchUp_Recover,
+    LatchUp_Trg         => LatchUp_Trg(2),
+    LatchUp_Detect      => LatchUp_Detect
 );
 
 EncRBuf3	: Encoder
@@ -782,7 +905,10 @@ port map (
 	hit_2					=> hit_two (3),
 	hit_3					=> hit_tri (3),
 	addr					=> ReadEncAddr,
-	dout					=> EncData (  63 downto  48)
+	dout					=> EncData (  63 downto  48),
+    LatchUp_Recover     => LatchUp_Recover,
+    LatchUp_Trg         => LatchUp_Trg(3),
+    LatchUp_Detect      => LatchUp_Detect
 );
 
 EncRBuf4	: Encoder
@@ -796,7 +922,10 @@ port map (
 	hit_2					=> hit_two (4),
 	hit_3					=> hit_tri (4),
 	addr					=> ReadEncAddr,
-	dout					=> EncData (  79 downto  64)
+	dout					=> EncData (  79 downto  64),
+    LatchUp_Recover     => LatchUp_Recover,
+    LatchUp_Trg         => LatchUp_Trg(4),
+    LatchUp_Detect      => LatchUp_Detect
 );
 
 EncRBuf5	: Encoder
@@ -810,7 +939,10 @@ port map (
 	hit_2					=> hit_two (5),
 	hit_3					=> hit_tri (5),
 	addr					=> ReadEncAddr,
-	dout					=> EncData (  95 downto  80)
+	dout					=> EncData (  95 downto  80),
+    LatchUp_Recover     => LatchUp_Recover,
+    LatchUp_Trg         => LatchUp_Trg(5),
+    LatchUp_Detect      => LatchUp_Detect
 );
 
 EncRBuf6	: Encoder
@@ -824,7 +956,10 @@ port map (
 	hit_2					=> hit_two (6),
 	hit_3					=> hit_tri (6),
 	addr					=> ReadEncAddr,
-	dout					=> EncData ( 111 downto  96)
+	dout					=> EncData ( 111 downto  96),
+    LatchUp_Recover     => LatchUp_Recover,
+    LatchUp_Trg         => LatchUp_Trg(6),
+    LatchUp_Detect      => LatchUp_Detect
 );
 
 EncRBuf7	: Encoder
@@ -838,7 +973,10 @@ port map (
 	hit_2					=> hit_two (7),
 	hit_3					=> hit_tri (7),
 	addr					=> ReadEncAddr,
-	dout					=> EncData ( 127 downto 112)
+	dout					=> EncData ( 127 downto 112),
+    LatchUp_Recover     => LatchUp_Recover,
+    LatchUp_Trg         => LatchUp_Trg(7),
+    LatchUp_Detect      => LatchUp_Detect
 );
 
 
@@ -1247,7 +1385,7 @@ port map (
     rbcp_ack        => rbcp_ack,
     rbcp_rd         => rbcp_rd,
 
-    DAC_ack			=> DAC_Set,
+    DAC_ack			=> DAC_Set_RBCP,
     DAC_ctrl		=> DAC_Run,
     DAC_Ch			=> DAC_Ch,
     DAC_Data		=> DAC_Data,
@@ -1262,7 +1400,8 @@ port map (
     ADC_BIAS_Ch     => ADC_BIAS_Ch,
     ADC_BIAS_Data   => ADC_BIAS_Data,
 
-    AP_ON           => AP_ON
+    AP_ON           => AP_ON_RBCP,
+    LatchUp_Detect  => LatchUp_Detect
 );
 
 SW_0_IB:    IOBUF   generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "SLOW")  

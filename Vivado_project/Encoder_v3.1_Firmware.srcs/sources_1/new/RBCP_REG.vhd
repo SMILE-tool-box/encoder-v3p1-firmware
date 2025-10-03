@@ -58,7 +58,8 @@ entity RBCP_REG is
             ADC_BIAS_Ch         : in    std_logic_vector (7 downto 0);
             ADC_BIAS_Data       : out   std_logic_vector (7 downto 0);
 
-            AP_ON               : out   std_logic
+            AP_ON               : out   std_logic;
+            LatchUp_Detect      : out   std_logic
      );
 end RBCP_REG;
 
@@ -102,6 +103,10 @@ architecture Behavioral of RBCP_REG is
 
     signal  AP_ON_flag      : std_logic;
     signal  AP_OFF_flag     : std_logic;
+
+    signal  LatchUp_DetectOn    : std_logic;
+    signal  LatchUp_DetectOff   : std_logic;
+    signal  ctrl_flag2          : std_logic;
 
 begin
 
@@ -199,7 +204,7 @@ begin
     elsif clock'event and clock='1' then
         if rbcp_act='1' then
             bufAddr         <= irAddr ( 7 downto 0);
-            bufWe(0)        <= irWe and valid_flag and (not ctrl_flag);
+            bufWe(0)        <= irWe and valid_flag and (not ctrl_flag) and (not ctrl_flag2);
             bufDin          <= irWd;
             bufDout         <= regDout;
 			DAC_Data		<= (others => '0');
@@ -291,6 +296,29 @@ end process;
 process (clock, reset)
 begin
     if reset='1' then
+            ctrl_flag2           <= '0';
+            LatchUp_DetectOn          <= '0';
+            LatchUp_DetectOff         <= '0';
+	elsif clock'event and clock='1' then
+		if chkAddr=x"000000f1" and bufWe="1" then
+			ctrl_flag2			<= '1';
+            LatchUp_DetectOn          <= bufDin(0);
+            LatchUp_DetectOff         <= bufDin(1);
+		else
+			ctrl_flag2			<= '0';
+            LatchUp_DetectOn          <= '0';
+            LatchUp_DetectOff         <= '0';
+		end if;
+	end if;
+end process;
+
+
+
+
+
+process (clock, reset)
+begin
+    if reset='1' then
             vth_flag            <= '0';
 	elsif clock'event and clock='1' then
 		if chkAddr=x"000000f0" and bufWe="1" then
@@ -336,6 +364,20 @@ begin
             AP_ON       <= '1';
         elsif AP_ON_flag='0' and AP_OFF_flag='1' then
             AP_ON       <= '0';
+        end if;
+    end if;
+end process;
+
+
+process (clock, reset)
+begin
+    if reset='1' then
+        LatchUp_Detect           <= '0';
+    elsif clock'event and clock='1' then
+        if LatchUp_DetectOn='1' and LatchUp_DetectOff='0' then
+            LatchUp_Detect       <= '1';
+        elsif LatchUp_DetectOn='0' and LatchUp_DetectOff='1' then
+            LatchUp_Detect       <= '0';
         end if;
     end if;
 end process;

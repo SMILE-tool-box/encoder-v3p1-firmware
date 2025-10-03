@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!-- Product Version: Vivado v2024.1 (64-bit)                              -->
+<!-- Product Version: Vivado v2024.2 (64-bit)                              -->
 <!--                                                                         -->
 <!-- Copyright 1986-2022 Xilinx, Inc. All Rights Reserved.                   -->
 <!-- Copyright 2022-2024 Advanced Micro Devices, Inc. All Rights Reserved.   -->
 
-<Project Product="Vivado" Version="7" Minor="67" Path="C:/Users/msgc/Hardware/FPGA/Encoder_v3.1_ver3.0.0/Encoder_v3.1_ver3.0.0.xpr">
+<Project Product="Vivado" Version="7" Minor="68" Path="C:/Users/msgc/Hardware/FPGA/Encoder_v3.1_Firmware/Vivado_project/Encoder_v3.1_Firmware.xpr">
   <DefaultLaunch Dir="$PRUNDIR"/>
   <Configuration>
-    <Option Name="Id" Val="5b025a3b62c94409b4ef05dd0b0e5621"/>
+    <Option Name="Id" Val="e4366d703b594f6299a0564feab53e6e"/>
     <Option Name="Part" Val="xc7s100fgga676-2"/>
     <Option Name="CompiledLibDir" Val="$PCACHEDIR/compile_simlib"/>
     <Option Name="CompiledLibDirXSim" Val=""/>
@@ -29,13 +29,13 @@
     <Option Name="SimulatorGccInstallDirVCS" Val=""/>
     <Option Name="SimulatorGccInstallDirRiviera" Val=""/>
     <Option Name="SimulatorGccInstallDirActiveHdl" Val=""/>
-    <Option Name="SimulatorVersionXsim" Val="2024.1"/>
-    <Option Name="SimulatorVersionModelSim" Val="2023.2"/>
-    <Option Name="SimulatorVersionQuesta" Val="2023.2"/>
+    <Option Name="SimulatorVersionXsim" Val="2024.2"/>
+    <Option Name="SimulatorVersionModelSim" Val="2024.1"/>
+    <Option Name="SimulatorVersionQuesta" Val="2024.1"/>
     <Option Name="SimulatorVersionXcelium" Val="23.03.002"/>
     <Option Name="SimulatorVersionVCS" Val="U-2023.03-1"/>
-    <Option Name="SimulatorVersionRiviera" Val="2023.04"/>
-    <Option Name="SimulatorVersionActiveHdl" Val="14.1"/>
+    <Option Name="SimulatorVersionRiviera" Val="2024.04"/>
+    <Option Name="SimulatorVersionActiveHdl" Val="15.0"/>
     <Option Name="SimulatorGccVersionXsim" Val="9.3.0"/>
     <Option Name="SimulatorGccVersionModelSim" Val="7.4.0"/>
     <Option Name="SimulatorGccVersionQuesta" Val="7.4.0"/>
@@ -84,13 +84,13 @@
     <Option Name="SimTypes" Val="tlm_dpi"/>
     <Option Name="MEMEnableMemoryMapGeneration" Val="TRUE"/>
     <Option Name="DcpsUptoDate" Val="TRUE"/>
-    <Option Name="ClassicSocBoot" Val="FALSE"/>
+    <Option Name="UseInlineHdlIP" Val="TRUE"/>
     <Option Name="LocalIPRepoLeafDirName" Val="ip_repo"/>
   </Configuration>
   <FileSets Version="1" Minor="32">
     <FileSet Name="sources_1" Type="DesignSrcs" RelSrcDir="$PSRCDIR/sources_1" RelGenDir="$PGENDIR/sources_1">
       <Filter Type="Srcs"/>
-      <File Path="$PSRCDIR/sources_1/imports/Desktop/SiTCP_XC7S_32K_BBT_V110.edf">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/Desktop/SiTCP_XC7S_32K_BBT_V110.edf">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../../Users/at_ta/Desktop/SiTCP_XC7S_32K_BBT_V110.edf"/>
           <Attr Name="ImportTime" Val="1510906207"/>
@@ -98,7 +98,7 @@
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/Desktop/LAN8810_INIT.v">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/Desktop/LAN8810_INIT.v">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../../Users/at_ta/Desktop/LAN8810_INIT.v"/>
           <Attr Name="ImportTime" Val="1609742110"/>
@@ -107,7 +107,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/Desktop/SiTCP_XC7S_32K_BBT_V110.v">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/Desktop/SiTCP_XC7S_32K_BBT_V110.v">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../../Users/at_ta/Desktop/SiTCP_XC7S_32K_BBT_V110.v"/>
           <Attr Name="ImportTime" Val="1510906354"/>
@@ -116,7 +116,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/Desktop/TIMER.v">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/Desktop/TIMER.v">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../../Users/at_ta/Desktop/TIMER.v"/>
           <Attr Name="ImportTime" Val="1271839800"/>
@@ -125,7 +125,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/Desktop/WRAP_SiTCP_GMII_XC7S_32K.v">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/Desktop/WRAP_SiTCP_GMII_XC7S_32K.v">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../../Users/at_ta/Desktop/WRAP_SiTCP_GMII_XC7S_32K.v"/>
           <Attr Name="ImportTime" Val="1510906489"/>
@@ -134,7 +134,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/GigaIwaki/ASIC_DAC_set.vhd">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/GigaIwaki/ASIC_DAC_set.vhd">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/imports/GigaIwaki/ASIC_DAC_set.vhd"/>
           <Attr Name="ImportTime" Val="1696572271"/>
@@ -142,7 +142,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/GigaIwaki/DAC_set.vhd">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/GigaIwaki/DAC_set.vhd">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/imports/GigaIwaki/DAC_set.vhd"/>
           <Attr Name="ImportTime" Val="1696572750"/>
@@ -150,7 +150,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/GigaIwaki/Encoder.vhd">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/GigaIwaki/Encoder.vhd">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../GigaIwaki/Encoder.vhd"/>
           <Attr Name="ImportTime" Val="1695962369"/>
@@ -158,7 +158,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/GigaIwaki/FADC_reg.vhd">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/GigaIwaki/FADC_reg.vhd">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../GigaIwaki/FADC_reg.vhd"/>
           <Attr Name="ImportTime" Val="1695962369"/>
@@ -166,7 +166,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/imports/GigaIwaki/Formatter.vhd">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/imports/GigaIwaki/Formatter.vhd">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../GigaIwaki/Formatter.vhd"/>
           <Attr Name="ImportTime" Val="1695962369"/>
@@ -174,7 +174,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/new/RBCP_REG.vhd">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/new/RBCP_REG.vhd">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/new/RBCP_REG.vhd"/>
           <Attr Name="ImportTime" Val="1696486492"/>
@@ -182,7 +182,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/new/main.vhd">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/new/main.vhd">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/new/main.vhd"/>
           <Attr Name="ImportTime" Val="1698306520"/>
@@ -198,7 +198,7 @@
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
       <Filter Type="Constrs"/>
-      <File Path="$PSRCDIR/constrs_1/imports/Desktop/FE2009bal_u_Gigabit_RO_V3.xdc">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/constrs_1/imports/Desktop/FE2009bal_u_Gigabit_RO_V3.xdc">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../../Users/at_ta/Desktop/FE2009bal_u_Gigabit_RO_V3.xdc"/>
           <Attr Name="ImportTime" Val="1691473199"/>
@@ -206,7 +206,7 @@
           <Attr Name="UsedIn" Val="implementation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/constrs_1/imports/Desktop/EDF_SiTCP.xdc">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/constrs_1/imports/Desktop/EDF_SiTCP.xdc">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../../Users/at_ta/Desktop/EDF_SiTCP.xdc"/>
           <Attr Name="ImportTime" Val="1511334773"/>
@@ -215,7 +215,7 @@
         </FileInfo>
       </File>
       <Config>
-        <Option Name="TargetConstrsFile" Val="$PSRCDIR/constrs_1/imports/Desktop/FE2009bal_u_Gigabit_RO_V3.xdc"/>
+        <Option Name="TargetConstrsFile" Val="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/constrs_1/imports/Desktop/FE2009bal_u_Gigabit_RO_V3.xdc"/>
         <Option Name="ConstrsType" Val="XDC"/>
       </Config>
     </FileSet>
@@ -234,11 +234,14 @@
         <Option Name="PamSignalDriverFile" Val="xil_bypass_driver"/>
         <Option Name="PamPseudoTop" Val="pseudo_tb"/>
         <Option Name="SrcSet" Val="sources_1"/>
+        <Option Name="CosimPdi" Val=""/>
+        <Option Name="CosimPlatform" Val=""/>
+        <Option Name="CosimElf" Val=""/>
       </Config>
     </FileSet>
     <FileSet Name="utils_1" Type="Utils" RelSrcDir="$PSRCDIR/utils_1" RelGenDir="$PGENDIR/utils_1">
       <Filter Type="Utils"/>
-      <File Path="$PSRCDIR/utils_1/imports/synth_1/main.dcp">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/utils_1/imports/synth_1/main.dcp">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/utils_1/imports/synth_1/main.dcp"/>
           <Attr Name="ImportTime" Val="1698306534"/>
@@ -253,7 +256,7 @@
       </Config>
     </FileSet>
     <FileSet Name="fifo_generator_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/fifo_generator_0" RelGenDir="$PGENDIR/fifo_generator_0">
-      <File Path="$PSRCDIR/sources_1/ip/fifo_generator_0_1.xcix">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/fifo_generator_0_1.xcix">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/fifo_generator_0_1.xcix"/>
           <Attr Name="ImportTime" Val="1695884418"/>
@@ -262,7 +265,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/ip/fifo_generator_0_1/fifo_generator_0.xci">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/fifo_generator_0_1/fifo_generator_0.xci">
         <FileInfo>
           <Attr Name="AutoDisabled" Val="1"/>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/fifo_generator_0_1/fifo_generator_0.xci"/>
@@ -278,7 +281,7 @@
       </Config>
     </FileSet>
     <FileSet Name="blk_mem_gen_0" Type="BlockSrcs" RelSrcDir="$PSRCDIR/blk_mem_gen_0" RelGenDir="$PGENDIR/blk_mem_gen_0">
-      <File Path="$PSRCDIR/sources_1/ip/blk_mem_gen_0.xcix">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/blk_mem_gen_0.xcix">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/blk_mem_gen_0.xcix"/>
           <Attr Name="ImportTime" Val="1695884415"/>
@@ -287,7 +290,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/ip/blk_mem_gen_0/blk_mem_gen_0.xci">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/blk_mem_gen_0/blk_mem_gen_0.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/blk_mem_gen_0/blk_mem_gen_0.xci"/>
           <Attr Name="ImportTime" Val="1695881542"/>
@@ -302,7 +305,7 @@
       </Config>
     </FileSet>
     <FileSet Name="fifo_buffer" Type="BlockSrcs" RelSrcDir="$PSRCDIR/fifo_buffer" RelGenDir="$PGENDIR/fifo_buffer">
-      <File Path="$PSRCDIR/sources_1/ip/fifo_buffer.xcix">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/fifo_buffer.xcix">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/fifo_buffer.xcix"/>
           <Attr Name="ImportTime" Val="1696831991"/>
@@ -311,7 +314,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/ip/fifo_buffer/fifo_buffer.xci">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/fifo_buffer/fifo_buffer.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/fifo_buffer/fifo_buffer.xci"/>
           <Attr Name="ImportTime" Val="1696831842"/>
@@ -326,7 +329,7 @@
       </Config>
     </FileSet>
     <FileSet Name="fifo_32" Type="BlockSrcs" RelSrcDir="$PSRCDIR/fifo_32" RelGenDir="$PGENDIR/fifo_32">
-      <File Path="$PSRCDIR/sources_1/ip/fifo_32.xcix">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/fifo_32.xcix">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/fifo_32.xcix"/>
           <Attr Name="ImportTime" Val="1696832184"/>
@@ -335,7 +338,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/ip/fifo_32/fifo_32.xci">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/fifo_32/fifo_32.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/fifo_32/fifo_32.xci"/>
           <Attr Name="ImportTime" Val="1696831998"/>
@@ -350,7 +353,7 @@
       </Config>
     </FileSet>
     <FileSet Name="ring_buf_16" Type="BlockSrcs" RelSrcDir="$PSRCDIR/ring_buf_16" RelGenDir="$PGENDIR/ring_buf_16">
-      <File Path="$PSRCDIR/sources_1/ip/ring_buf_16.xcix">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/ring_buf_16.xcix">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/ring_buf_16.xcix"/>
           <Attr Name="ImportTime" Val="1697612436"/>
@@ -359,7 +362,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/ip/ring_buf_16/ring_buf_16.xci">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/ring_buf_16/ring_buf_16.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/ring_buf_16/ring_buf_16.xci"/>
           <Attr Name="ImportTime" Val="1697612290"/>
@@ -374,7 +377,7 @@
       </Config>
     </FileSet>
     <FileSet Name="ring_buf_10" Type="BlockSrcs" RelSrcDir="$PSRCDIR/ring_buf_10" RelGenDir="$PGENDIR/ring_buf_10">
-      <File Path="$PSRCDIR/sources_1/ip/ring_buf_10.xcix">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/ring_buf_10.xcix">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/ring_buf_10.xcix"/>
           <Attr Name="ImportTime" Val="1697612516"/>
@@ -383,7 +386,7 @@
           <Attr Name="UsedIn" Val="simulation"/>
         </FileInfo>
       </File>
-      <File Path="$PSRCDIR/sources_1/ip/ring_buf_10/ring_buf_10.xci">
+      <File Path="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/sources_1/ip/ring_buf_10/ring_buf_10.xci">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../2023_1019_tsukamoto/SP7_encoder.srcs/sources_1/ip/ring_buf_10/ring_buf_10.xci"/>
           <Attr Name="ImportTime" Val="1697612392"/>
@@ -417,7 +420,7 @@
     </Simulator>
   </Simulators>
   <Runs Version="1" Minor="22">
-    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7s100fgga676-2" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="true" IncrementalCheckpoint="$PSRCDIR/utils_1/imports/synth_1/main.dcp" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1" ParallelReportGen="true">
+    <Run Id="synth_1" Type="Ft3:Synth" SrcSet="sources_1" Part="xc7s100fgga676-2" ConstrsSet="constrs_1" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="true" IncrementalCheckpoint="$PPRDIR/../../Encoder_v3.1_ver3.0.1/Encoder_v3.1_ver3.0.1.srcs/utils_1/imports/synth_1/main.dcp" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2023"/>
         <Step Id="synth_design"/>
@@ -427,12 +430,11 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="fifo_generator_0_synth_1" Type="Ft3:Synth" SrcSet="fifo_generator_0" Part="xc7s100fgga676-2" ConstrsSet="fifo_generator_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" Dir="$PRUNDIR/fifo_generator_0_synth_1" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/fifo_generator_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/fifo_generator_0_synth_1" ParallelReportGen="true">
+    <Run Id="fifo_generator_0_synth_1" Type="Ft3:Synth" SrcSet="fifo_generator_0" Part="xc7s100fgga676-2" ConstrsSet="fifo_generator_0" Description="Vivado Synthesis Defaults" AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" IncludeInArchive="true" IsChild="false" AutoIncrementalDir="$PSRCDIR/utils_1/imports/fifo_generator_0_synth_1" AutoRQSDir="$PSRCDIR/utils_1/imports/fifo_generator_0_synth_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Synthesis Defaults" Flow="Vivado Synthesis 2023"/>
         <Step Id="synth_design"/>
       </Strategy>
-      <GeneratedRun Dir="$PRUNDIR" File="gen_run.xml"/>
       <ReportStrategy Name="Vivado Synthesis Default Reports" Flow="Vivado Synthesis 2023"/>
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
@@ -487,7 +489,7 @@
       <Report Name="ROUTE_DESIGN.REPORT_METHODOLOGY" Enabled="1"/>
       <RQSFiles/>
     </Run>
-    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7s100fgga676-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_1" LaunchOptions="-jobs 6 " AutoRQSDir="$PSRCDIR/utils_1/imports/impl_1" ParallelReportGen="true">
+    <Run Id="impl_1" Type="Ft2:EntireDesign" Part="xc7s100fgga676-2" ConstrsSet="constrs_1" Description="Default settings for Implementation." AutoIncrementalCheckpoint="false" WriteIncrSynthDcp="false" State="current" Dir="$PRUNDIR/impl_1" SynthRun="synth_1" IncludeInArchive="true" IsChild="false" GenFullBitstream="true" AutoIncrementalDir="$PSRCDIR/utils_1/imports/impl_1" LaunchOptions="-jobs 16 " AutoRQSDir="$PSRCDIR/utils_1/imports/impl_1" ParallelReportGen="true">
       <Strategy Version="1" Minor="2">
         <StratHandle Name="Vivado Implementation Defaults" Flow="Vivado Implementation 2023"/>
         <Step Id="init_design"/>

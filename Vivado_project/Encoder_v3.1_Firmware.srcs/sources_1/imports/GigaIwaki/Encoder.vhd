@@ -41,7 +41,10 @@ entity Encoder is
 		hit_2					: out	std_logic;
 		hit_3					: out	std_logic;
 		addr					: in	unsigned (10 downto 0);
-		dout					: out	std_logic_vector (15 downto 0)
+		dout					: out	std_logic_vector (15 downto 0);
+		LatchUp_Recover		: in	std_logic;
+		LatchUp_Trg			: out	std_logic;
+		LatchUp_Detect		: in	std_logic
 	);
 end Encoder;
 
@@ -65,11 +68,47 @@ architecture Behavioral of Encoder is
 	signal	hit_xor		: std_logic_vector ( 3 downto 0);
 	signal	hit_tri		: std_logic_vector ( 3 downto 0);
 	signal	wea			: std_logic_vector ( 0 downto 0);
+
+	signal	Hit_Cnt		: std_logic_vector (11 downto 0)	:= (others => '0');
+	signal	LatchUp_TrgBuf		: std_logic;
 begin
 hit_xor(0)		<= hit_one(0) xor hit_two(0);
 hit_xor(1)		<= hit_one(1) xor hit_two(1);
 hit_xor(2)		<= hit_one(2) xor hit_two(2);
 hit_xor(3)		<= hit_one(3) xor hit_two(3);
+
+------------- Latch Up Detect
+process (clk, rst, LatchUp_Recover)
+begin
+	if rst='1' or LatchUp_Recover='1' then
+		Hit_Cnt			<= (others => '0');
+		LatchUp_TrgBuf		<= '0';
+	elsif clk'event and clk='1' then
+		if LatchUp_Detect='1' and LatchUp_TrgBuf='0' then
+			if bufXPD(15 downto 0)/=x"0000" then
+				if Hit_Cnt/=x"fff" then
+					Hit_Cnt		<= Hit_Cnt + '1';
+				else
+					LatchUp_TrgBuf		<= '1';
+				end if;
+			else
+				Hit_Cnt			<= (others => '0');
+			end if;
+		end if;
+	end if;
+end process;
+
+
+LatchUp_Trg		<= LatchUp_TrgBuf;
+
+
+
+
+
+-------------------------
+
+
+
 
 process (clk)
 begin
