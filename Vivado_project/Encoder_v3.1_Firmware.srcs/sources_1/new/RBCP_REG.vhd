@@ -290,16 +290,36 @@ begin
             DAC_flag            <= '0';
             ADC_BIAS_flag       <= '0';
 	elsif clock'event and clock='1' then
+		-- detect control write to 0xF0 and latch flags until consumed by *_ctrl_Buf
 		if irAddr=x"000000f0" and bufWe="1" then
             ctrl_flag           <= '1';
-			vth_flag			<= bufDin(0) and (not bufDin(1)) and (not bufDin(2));
-            DAC_flag            <= bufDin(1) and (not bufDin(0)) and (not bufDin(2));
-            ADC_BIAS_flag       <= bufDin(2) and (not bufDin(0)) and (not bufDin(1));
+			if bufDin(0)='1' and bufDin(1)='0' and bufDin(2)='0' then
+                vth_flag        <= '1';
+            end if;
+            if bufDin(1)='1' and bufDin(0)='0' and bufDin(2)='0' then
+                DAC_flag        <= '1';
+            end if;
+            if bufDin(2)='1' and bufDin(0)='0' and bufDin(1)='0' then
+                ADC_BIAS_flag   <= '1';
+            end if;
 		else
             ctrl_flag           <= '0';
-			vth_flag			<= '0';
-            DAC_flag            <= '0';
-			ADC_BIAS_flag       <= '0';
+            -- clear each flag only when corresponding ctrl runs; otherwise hold
+            if Vth_ctrl_Buf='1' then
+                vth_flag        <= '0';
+            else
+                vth_flag        <= vth_flag;
+            end if;
+            if DAC_ctrl_Buf='1' then
+                DAC_flag        <= '0';
+            else
+                DAC_flag        <= DAC_flag;
+            end if;
+            if ADC_ctrl_Buf='1' then
+                ADC_BIAS_flag   <= '0';
+            else
+                ADC_BIAS_flag   <= ADC_BIAS_flag;
+            end if;
 		end if;
 	end if;
 end process;
