@@ -12,3 +12,6 @@ Vivado_project/Encoder_v3.1_Firmware.hw
 Vivado_project/Encoder_v3.1_Firmware.ip_user_files
 Vivado_project/Encoder_v3.1_Firmware.runs
 Vivado_project/Encoder_v3.1_Firmware.sim
+
+*_old.vhd
+*_new.vhd

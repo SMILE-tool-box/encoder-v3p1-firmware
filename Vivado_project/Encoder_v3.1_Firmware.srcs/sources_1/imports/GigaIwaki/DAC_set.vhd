@@ -137,7 +137,7 @@ begin
 	if RST='1' then
 		regState                 <= stay;
 	elsif CLK'event and CLK='1' then
-	    if CtrlClk='0' and reg_cclk='1' then
+	    if CtrlClk='1' and reg_cclk='0' then
       		regState             <= nextState;
         end if;
 	end if;
@@ -148,14 +148,14 @@ begin
 	if RST='1' then
 		DAC_Data                       <= (others => '0');
 	elsif CLK'event and CLK='1' then
-        if CtrlClk='1' and reg_cclk='0' then
-       	    if regState=u_rd then
-           	    DAC_Data (15 downto 8)	<= "00" & Data ( 5 downto 0);
-            elsif regState=d_rd then
+        if CtrlClk='0' and reg_cclk='1' then
+        	if regState=u_rd then
+	        	DAC_Data (15 downto 8)	<= "00" & Data ( 5 downto 0);
+	        elsif regState=d_rd then
 		        DAC_Data ( 7 downto 0)	<= Data;
-            elsif regState=ctrl then
-                DAC_Data				<= DAC_Data (14 downto 0) & '0';
-            end if;
+	        elsif regState=ctrl then
+	            DAC_Data				<= DAC_Data (14 downto 0) & '0';
+	        end if;
         end if;
 	end if;
 end process;
@@ -163,7 +163,7 @@ end process;
 process (CLK, RST)
 begin
 	if RST='1' then
-		BitCount				<= (others => '0');
+		BitCount                  <= (others => '0');
 	elsif CLK'event and CLK='1' then
         if CtrlClk='1' and reg_cclk='0' then
             if regState=ctrl then
@@ -196,7 +196,7 @@ end process;
 process (CLK)
 begin
 	if CLK'event and CLK='1' then
-        if CtrlClk='0' and reg_cclk='1' then
+        if CtrlClk='1' and reg_cclk='0' then
        		reg_din				<= DAC_Data(15);
        		DAC_DIN				<= reg_din;
         end if;
