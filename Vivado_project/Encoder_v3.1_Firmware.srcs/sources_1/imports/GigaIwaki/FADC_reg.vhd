@@ -35,15 +35,15 @@ entity FADC_reg is
 		CLK					: in	std_logic;
 		rst					: in	std_logic;
 		run					: in	std_logic;
-		Addr				: in	unsigned ( 9 downto 0);
+		Addr					: in	unsigned ( 9 downto 0);
 		Dout_A				: out	std_logic_vector ( 9 downto 0);
 		Dout_B				: out	std_logic_vector ( 9 downto 0);
 		Dout_C				: out	std_logic_vector ( 9 downto 0);
 		Dout_D				: out	std_logic_vector ( 9 downto 0);
 		
 		-- FADC I/F
-		FADC_CLK			: out	std_logic;
-		FADC_Set			: out	std_logic_vector ( 1 downto 0);
+		FADC_CLK				: out	std_logic;
+		FADC_Set				: out	std_logic_vector ( 1 downto 0);
 		FADC_Data_A			: in	std_logic_vector ( 9 downto 0);
 		FADC_Data_B			: in	std_logic_vector ( 9 downto 0);
 		FADC_Data_C			: in	std_logic_vector ( 9 downto 0);
@@ -54,15 +54,15 @@ end FADC_reg;
 architecture Behavioral of FADC_reg is
 	component ring_buf_10
 	PORT (
-		clka 				: IN 	STD_LOGIC;
-		wea 				: IN 	STD_LOGIC_VECTOR ( 0 DOWNTO 0);
+		clka 					: IN 	STD_LOGIC;
+		wea 					: IN 	STD_LOGIC_VECTOR ( 0 DOWNTO 0);
 		addra 				: IN 	STD_LOGIC_VECTOR ( 9 DOWNTO 0);
-		dina 				: IN 	STD_LOGIC_VECTOR ( 9 DOWNTO 0);
+		dina 					: IN 	STD_LOGIC_VECTOR ( 9 DOWNTO 0);
 		douta 				: OUT STD_LOGIC_VECTOR ( 9 DOWNTO 0)
 	);
   end component;
   
-  signal		regWe		: std_logic_vector ( 0 downto 0);
+  signal		regWe			: std_logic_vector ( 0 downto 0);
   signal		regFCLK		: std_logic;
   signal		regAddr		: unsigned ( 9 downto 0);
   signal		bufAddr		: unsigned ( 9 downto 0);
@@ -82,16 +82,16 @@ end process;
 process (CLK)
 begin
 	if CLK'event and CLK='1' then
-		regWe(0)			<= (not regFCLK) and run;
+		regWe(0)				<= (not regFCLK) and run;
 	end if;
 end process;
 
-process (CLK, RST)
+process (regFCLK, RST)
 begin
 	if RST='1' then
 		regAddr				<= (others => '0');
-	elsif CLK'event and CLK='1' then
-		if run='1' and regFCLK='1' then
+	elsif regFCLK'event and regFCLK='1' then
+		if run='1' then
 			regAddr			<= regAddr + 1;
 		end if;
 	end if;
@@ -112,36 +112,36 @@ RBuf_A	: ring_buf_10
 port map (
 	clka 					=> CLK,
 	wea 					=> regWe,
-	addra 				    => std_logic_vector(bufAddr),
+	addra 				=> std_logic_vector(bufAddr),
 	dina 					=> FADC_Data_A,
-	douta 				    => Dout_A
+	douta 				=> Dout_A
 );
 
 RBuf_B	: ring_buf_10
 port map (
 	clka 					=> CLK,
 	wea 					=> regWe,
-	addra 				    => std_logic_vector(bufAddr),
+	addra 				=> std_logic_vector(bufAddr),
 	dina 					=> FADC_Data_B,
-	douta 				    => Dout_B
+	douta 				=> Dout_B
 );
 
 RBuf_C	: ring_buf_10
 port map (
 	clka 					=> CLK,
 	wea 					=> regWe,
-	addra 				    => std_logic_vector(bufAddr),
+	addra 				=> std_logic_vector(bufAddr),
 	dina 					=> FADC_Data_C,
-	douta 				    => Dout_C
+	douta 				=> Dout_C
 );
 
 RBuf_D	: ring_buf_10
 port map (
 	clka 					=> CLK,
 	wea 					=> regWe,
-	addra 				    => std_logic_vector(bufAddr),
+	addra 				=> std_logic_vector(bufAddr),
 	dina 					=> FADC_Data_D,
-	douta 				    => Dout_D
+	douta 				=> Dout_D
 );
 
 end Behavioral;

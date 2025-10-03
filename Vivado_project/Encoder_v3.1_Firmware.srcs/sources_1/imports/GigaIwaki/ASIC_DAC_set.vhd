@@ -50,7 +50,6 @@ end ASIC_DAC_set;
 
 architecture Behavioral of ASIC_DAC_set is
 	signal	CtrlClk		: std_logic;
-	signal  regCtrl     : std_logic;
 	signal	reg_WE		: std_logic;
 	signal	reg_CE		: std_logic;
 	signal	reg_RST		: std_logic;
@@ -60,11 +59,11 @@ architecture Behavioral of ASIC_DAC_set is
 	signal	dly_we		: std_logic;
 	signal	reg_Din		: std_logic_vector ( 7 downto 0);
 	signal	DataBuf		: std_logic_vector ( 7 downto 0);
-	signal	ClkCount	: std_logic_vector ( 6 downto 0);
-	signal	ChCount		: std_logic_vector ( 7 downto 0);
-	signal	Ch_Num		: std_logic_vector ( 7 downto 0);
-	signal	BitCount	: std_logic_vector ( 2 downto 0);
-	signal	regState	: std_logic_vector ( 1 downto 0);
+	signal	ClkCount		: unsigned ( 6 downto 0);
+	signal	ChCount		: unsigned ( 7 downto 0);
+	signal	Ch_Num		: unsigned ( 7 downto 0);
+	signal	BitCount		: unsigned ( 2 downto 0);
+	signal	regState		: std_logic_vector ( 1 downto 0);
 	signal	nextState	: std_logic_vector ( 1 downto 0);
 begin
 DAC_WE		<= reg_WE;
@@ -116,103 +115,90 @@ begin
 		reg_Din				<= Data;
 		dly_we				<= reg_WE;
 --		Ch						<= std_logic_vector (x"7f" - ChCount);
-		Ch					<= std_logic_vector (Ch_Num);
-        regCtrl             <= CtrlClk;
+		Ch						<= std_logic_vector (Ch_Num);
 	end if;
 end process;
 
-process (CLK, RST)
+process (CtrlClk, RST)
 begin
 	if RST='1' then
 		regState				<= "00";
-    elsif CLK'event and CLK='1' then
-        if CtrlClk='1' and regCtrl='0' then
-    		regState			<= nextState;
-        end if;
+	elsif CtrlClk'event and CtrlClk='1' then
+		regState				<= nextState;
 	end if;
 end process;
 
-process (CLK)
+process (CtrlClk)
 begin
-    if CLK'event and CLK='1' then
-        if CtrlClk='1' and regCtrl='0' then
-            case regState is
-            when "01"	=>
-                reg_WE			<= '1';
-                reg_CE			<= '0';
-                reg_RST			<= '1';
-                reg_SD			<= '0';
-		    when "11"	=>
-                reg_WE			<= '1';
-                reg_CE			<= '1';
-                reg_RST			<= '0';
-                reg_SD			<= reg_bit;
-		    when others	=>
-			    reg_WE			<= '0';
-			    reg_CE			<= '0';
-			    reg_RST			<= '0';
-			    reg_SD			<= '0';
-            end case;
-        end if;
+	if CtrlClk'event and CtrlClk='1' then
+		case regState is
+		when "01"	=>
+			reg_WE			<= '1';
+			reg_CE			<= '0';
+			reg_RST			<= '1';
+			reg_SD			<= '0';
+		when "11"	=>
+			reg_WE			<= '1';
+			reg_CE			<= '1';
+			reg_RST			<= '0';
+			reg_SD			<= reg_bit;
+		when others	=>
+			reg_WE			<= '0';
+			reg_CE			<= '0';
+			reg_RST			<= '0';
+			reg_SD			<= '0';
+		end case;
 	end if;
 end process;
 
-process (CLK)
+process (CtrlClk)
 begin
-    if CLK'event and CLK='1' then
-    	if CtrlClk='1' and regCtrl='0' then
-	   	    reg_bit				<= DataBuf(0);
-    	end if;
-    end  if;
-end process;
-
-process (CLK)
-begin
-    if CLK'event and CLK='1' then
-        if CtrlClk='0' and regCtrl='1' then
-    	    case regState is
-		    when "11"	=>
-			    if BitCount="111" then
-				    DataBuf		<= reg_Din;
-			    else
-				    DataBuf		<= '0' & DataBuf ( 7 downto 1);
-			    end if;
-		    when others	=>
-			    DataBuf			<= reg_Din;
-		    end case;
-        end if;
+	if CtrlClk'event and CtrlClk='1' then
+		reg_bit				<= DataBuf(0);
 	end if;
 end process;
 
-process (CLK, RST)
+process (CtrlClk)
+begin
+	if CtrlClk'event and CtrlClk='0' then
+		case regState is
+		when "11"	=>
+			if BitCount="111" then
+				DataBuf		<= reg_Din;
+			else
+				DataBuf		<= '0' & DataBuf ( 7 downto 1);
+			end if;
+		when others	=>
+			DataBuf			<= reg_Din;
+		end case;
+	end if;
+end process;
+
+process (CtrlClk, RST)
 begin
 	if RST='1' then
 		BitCount				<= (others => '0');
-    elsif CLK'event and CLK='1' then
-        if CtrlClk='1' and regCtrl='0' then
-		    if regState="11" then
-			    BitCount			<= BitCount + 1;
-		    else
-			    BitCount			<= (others => '0');
-            end if;
+	elsif CtrlClk'event and CtrlClk='1' then
+		if regState="11" then
+			BitCount			<= BitCount + 1;
+		else
+			BitCount			<= (others => '0');
 		end if;
 	end if;
 end process;
 
-process (CLK, RST)
+process (CtrlClk, RST)
 begin
 	if RST='1' then
 		ChCount				<= (others => '0');
 		Ch_Num				<= x"7f";
-    elsif CLK'event and CLK='1' then
-        if CtrlClk='0' and regCtrl='1' then
-		    if regState="00" then
-			    ChCount			<= (others => '0');
-			    Ch_Num			<= x"7f";
-		    elsif regState="11" and BitCount="000" then
-			    ChCount			<= ChCount + 1;
-			    Ch_Num			<= Ch_Num - 1;
-            end if;
+	elsif CtrlClk'event and CtrlClk='0' then
+		if regState="00" then
+			ChCount			<= (others => '0');
+			Ch_Num			<= x"7f";
+		elsif regState="11" and BitCount="000" then
+			ChCount			<= ChCount + 1;
+			Ch_Num			<= Ch_Num - 1;
 		end if;
 	end if;
 end process;

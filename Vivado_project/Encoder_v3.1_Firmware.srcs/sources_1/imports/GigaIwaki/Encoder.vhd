@@ -37,21 +37,21 @@ entity Encoder is
 		CathodeSig			: in	std_logic;
 		XDP_IN				: in	std_logic_vector (15 downto 0);
 		run					: in	std_logic;
-		hit_flag			: out	std_logic;
-		hit_2				: out	std_logic;
-		hit_3				: out	std_logic;
-		addr				: in	unsigned (10 downto 0);
-		dout				: out	std_logic_vector (15 downto 0)
+		hit_flag				: out	std_logic;
+		hit_2					: out	std_logic;
+		hit_3					: out	std_logic;
+		addr					: in	unsigned (10 downto 0);
+		dout					: out	std_logic_vector (15 downto 0)
 	);
 end Encoder;
 
 architecture Behavioral of Encoder is
 	component ring_buf_16
 	port (
-		clka 				: IN 	STD_LOGIC;
-		wea 				: IN 	STD_LOGIC_VECTOR ( 0 DOWNTO 0);
+		clka 					: IN 	STD_LOGIC;
+		wea 					: IN 	STD_LOGIC_VECTOR ( 0 DOWNTO 0);
 		addra 				: IN 	STD_LOGIC_VECTOR (10 DOWNTO 0);
-		dina 				: IN 	STD_LOGIC_VECTOR (15 DOWNTO 0);
+		dina 					: IN 	STD_LOGIC_VECTOR (15 DOWNTO 0);
 		douta 				: OUT	STD_LOGIC_VECTOR (15 DOWNTO 0)
 	);
 	end component;
@@ -65,9 +65,6 @@ architecture Behavioral of Encoder is
 	signal	hit_xor		: std_logic_vector ( 3 downto 0);
 	signal	hit_tri		: std_logic_vector ( 3 downto 0);
 	signal	wea			: std_logic_vector ( 0 downto 0);
-
-	signal	Hit_Cnt		: std_logic_vector (11 downto 0)	:= (others => '0');
-	signal	LatchUp_TrgBuf		: std_logic;
 begin
 hit_xor(0)		<= hit_one(0) xor hit_two(0);
 hit_xor(1)		<= hit_one(1) xor hit_two(1);
@@ -88,7 +85,7 @@ end process;
 process (bufXPD( 3 downto  0))
 begin
 	case bufXPD( 3 downto  0) is
-	when	x"0"								=>
+	when	x"0"										=>
 		hit_one(0)		<= '0';
 		hit_two(0)		<= '0';
 		hit_tri(0)		<= '0';
@@ -100,7 +97,7 @@ begin
 		hit_one(0)		<= '1';
 		hit_two(0)		<= '1';
 		hit_tri(0)		<= '1';
-	when	others								=>
+	when	others									=>
 		hit_one(0)		<= '1';
 		hit_two(0)		<= '1';
 		hit_tri(0)		<= '0';
@@ -110,7 +107,7 @@ end process;
 process (bufXPD( 7 downto  4))
 begin
 	case bufXPD( 7 downto  4) is
-	when	x"0"								=>
+	when	x"0"										=>
 		hit_one(1)		<= '0';
 		hit_two(1)		<= '0';
 		hit_tri(1)		<= '0';
@@ -122,7 +119,7 @@ begin
 		hit_one(1)		<= '1';
 		hit_two(1)		<= '1';
 		hit_tri(1)		<= '1';
-	when	others								=>
+	when	others									=>
 		hit_one(1)		<= '1';
 		hit_two(1)		<= '1';
 		hit_tri(1)		<= '0';
@@ -132,7 +129,7 @@ end process;
 process (bufXPD(11 downto  8))
 begin
 	case bufXPD(11 downto  8) is
-	when	x"0"								=>
+	when	x"0"										=>
 		hit_one(2)		<= '0';
 		hit_two(2)		<= '0';
 		hit_tri(2)		<= '0';
@@ -144,7 +141,7 @@ begin
 		hit_one(2)		<= '1';
 		hit_two(2)		<= '1';
 		hit_tri(2)		<= '1';
-	when	others								=>
+	when	others									=>
 		hit_one(2)		<= '1';
 		hit_two(2)		<= '1';
 		hit_tri(2)		<= '0';
@@ -154,7 +151,7 @@ end process;
 process (bufXPD(15 downto 12))
 begin
 	case bufXPD(15 downto 12) is
-	when	x"0"								=>
+	when	x"0"										=>
 		hit_one(3)		<= '0';
 		hit_two(3)		<= '0';
 		hit_tri(3)		<= '0';
@@ -166,7 +163,7 @@ begin
 		hit_one(3)		<= '1';
 		hit_two(3)		<= '1';
 		hit_tri(3)		<= '1';
-	when	others								=>
+	when	others									=>
 		hit_one(3)		<= '1';
 		hit_two(3)		<= '1';
 		hit_tri(3)		<= '0';
@@ -178,7 +175,7 @@ begin
 	if clk'event and clk='1' then
 		case hit_one is
 		when	x"0" | x"1" | x"2" | x"4" | x"8"	=>		hit_2		<= '0';
-		when	others								=>		hit_2		<= '1';
+		when	others									=>		hit_2		<= '1';
 		end case;
 	end if;
 end process;
@@ -244,47 +241,81 @@ end process;
 
 RBuf_Enc		: ring_buf_16
 port map (
-	clka 				=> clk,
-	wea 				=> wea,
+	clka 					=> clk,
+	wea 					=> wea,
 	addra 				=> std_logic_vector(addrCnt),
-	dina 				=> bufXPD,
+	dina 					=> bufXPD,
 	douta 				=> dout
 );
 wea(0)		<= run;
 
+-- XDP_00_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  0),	I => XDP_IN(  0) );
+-- XDP_01_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  1),	I => XDP_IN(  1) );
+-- XDP_02_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  2),	I => XDP_IN(  2) );
+-- XDP_03_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  3),	I => XDP_IN(  3) );
+-- XDP_04_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  4),	I => XDP_IN(  4) );
+-- XDP_05_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  5),	I => XDP_IN(  5) );
+-- XDP_06_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  6),	I => XDP_IN(  6) );
+-- XDP_07_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  7),	I => XDP_IN(  7) );
+-- XDP_08_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  8),	I => XDP_IN(  8) );
+-- XDP_09_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD(  9),	I => XDP_IN(  9) );
+-- XDP_0A_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD( 10),	I => XDP_IN( 10) );
+-- XDP_0B_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD( 11),	I => XDP_IN( 11) );
+-- XDP_0C_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD( 12),	I => XDP_IN( 12) );
+-- XDP_0D_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD( 13),	I => XDP_IN( 13) );
+-- XDP_0E_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD( 14),	I => XDP_IN( 14) );
+-- XDP_0F_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS25" )
+-- 							port map	( O => regXPD( 15),	I => XDP_IN( 15) );
+
+
 --  Chenged  --
 XDP_00_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  0),	I => XDP_IN(  0) );
+							port map	( O => regXPD(  0),	I => XDP_IN(  0) );
 XDP_01_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  1),	I => XDP_IN(  1) );
+							port map	( O => regXPD(  1),	I => XDP_IN(  1) );
 XDP_02_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  2),	I => XDP_IN(  2) );
+							port map	( O => regXPD(  2),	I => XDP_IN(  2) );
 XDP_03_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  3),	I => XDP_IN(  3) );
+							port map	( O => regXPD(  3),	I => XDP_IN(  3) );
 XDP_04_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  4),	I => XDP_IN(  4) );
+							port map	( O => regXPD(  4),	I => XDP_IN(  4) );
 XDP_05_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  5),	I => XDP_IN(  5) );
+							port map	( O => regXPD(  5),	I => XDP_IN(  5) );
 XDP_06_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  6),	I => XDP_IN(  6) );
+							port map	( O => regXPD(  6),	I => XDP_IN(  6) );
 XDP_07_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  7),	I => XDP_IN(  7) );
+							port map	( O => regXPD(  7),	I => XDP_IN(  7) );
 XDP_08_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  8),	I => XDP_IN(  8) );
+							port map	( O => regXPD(  8),	I => XDP_IN(  8) );
 XDP_09_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD(  9),	I => XDP_IN(  9) );
+							port map	( O => regXPD(  9),	I => XDP_IN(  9) );
 XDP_0A_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD( 10),	I => XDP_IN( 10) );
+							port map	( O => regXPD( 10),	I => XDP_IN( 10) );
 XDP_0B_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD( 11),	I => XDP_IN( 11) );
+							port map	( O => regXPD( 11),	I => XDP_IN( 11) );
 XDP_0C_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD( 12),	I => XDP_IN( 12) );
+							port map	( O => regXPD( 12),	I => XDP_IN( 12) );
 XDP_0D_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD( 13),	I => XDP_IN( 13) );
+							port map	( O => regXPD( 13),	I => XDP_IN( 13) );
 XDP_0E_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD( 14),	I => XDP_IN( 14) );
+							port map	( O => regXPD( 14),	I => XDP_IN( 14) );
 XDP_0F_IB	: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-					port map	( O => regXPD( 15),	I => XDP_IN( 15) );
+							port map	( O => regXPD( 15),	I => XDP_IN( 15) );
 
 end Behavioral;
 

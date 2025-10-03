@@ -32,89 +32,87 @@ use UNISIM.VComponents.all;
 
 entity Formatter is
 	generic (
-		ClkDepth              : unsigned ( 10 downto 0)
+		ClkDepth				: unsigned ( 10 downto 0)
 	);
 	port (
-		CLK	                  : in	std_logic;
-		RST					  : in	std_logic;
-		Trigger	              : in	std_logic;
-		CntReset              : in	std_logic;
-		Run	                  : out	std_logic;
-		D_Exist               : in	std_logic;
-		EncAddr               : out	unsigned ( 10 downto 0);
-		FadcAddr              : out	unsigned (  9 downto 0);
-		HitData	              : in	std_logic_vector (127 downto 0);
-		FADC_A                : in	std_logic_vector (  9 downto 0);
-		FADC_B                : in	std_logic_vector (  9 downto 0);
-		FADC_C                : in	std_logic_vector (  9 downto 0);
-		FADC_D                : in	std_logic_vector (  9 downto 0);
-		valid                 : in	std_logic;
-		GSOcounter            : in	std_logic_vector ( 31 downto 0);
-		WriteEna              : out	std_logic;
-		Dout                  : out	std_logic_vector ( 31 downto 0)
+		CLK					: in	std_logic;
+		RST					: in	std_logic;
+		Trigger				: in	std_logic;
+		CntReset				: in	std_logic;
+		Run					: out	std_logic;
+		D_Exist				: in	std_logic;
+		EncAddr				: out	unsigned ( 10 downto 0);
+		FadcAddr				: out	unsigned (  9 downto 0);
+		HitData				: in	std_logic_vector (127 downto 0);
+		FADC_A				: in	std_logic_vector (  9 downto 0);
+		FADC_B				: in	std_logic_vector (  9 downto 0);
+		FADC_C				: in	std_logic_vector (  9 downto 0);
+		FADC_D				: in	std_logic_vector (  9 downto 0);
+		valid					: in	std_logic;
+		GSOcounter			: in	std_logic_vector ( 31 downto 0);
+		WriteEna				: out	std_logic;
+		Dout					: out	std_logic_vector ( 31 downto 0)
 	);
 end Formatter;
 
 architecture Behavioral of Formatter is
 	type		FmtrState	is	(	AcqData,	Header0,	Header1,	Header2,	Header3,
-									FADC_01,	FADC_23,	EncDt_0,	EncDt_1,	Fotter	);
-	type		EncState	is	(	ClkData,	Enc_0,	Enc_1,	Enc_2,	Enc_3,	Dwait	);
+										FADC_01,	FADC_23,	EncDt_0,	EncDt_1,	Fotter	);
+	type		EncState		is	(	ClkData,	Enc_0,	Enc_1,	Enc_2,	Enc_3,	Dwait	);
 
-	signal	regState        : FmtrState;
+	signal	regState			: FmtrState;
 	signal	nextState		: FmtrState;
 	signal	regEncode		: EncState;
 	signal	nextEncode		: EncState;
 	signal	ECntRst			: std_logic;
 	signal	reg_we			: std_logic;
-	signal	clk100us		: std_logic;
-	signal  reg100us        : std_logic;
-	signal	hit_flag		: std_logic;
+	signal	clk100us			: std_logic;
+	signal	hit_flag			: std_logic;
 	signal	TrgFlag			: std_logic;
-	signal  regTrigger      : std_logic;
 	signal	regDout			: std_logic_vector ( 31 downto 0);
-	signal	EvtCount		: std_logic_vector ( 31 downto 0);
-	signal	cnt100us		: std_logic_vector ( 13 downto 0);
-	signal	ClkCount		: std_logic_vector ( 31 downto 0);
+	signal	EvtCount			: std_logic_vector ( 31 downto 0);
+	signal	cnt100us			: std_logic_vector ( 13 downto 0);
+	signal	ClkCount			: std_logic_vector ( 31 downto 0);
 	signal	LatchedCnt		: std_logic_vector ( 31 downto 0);
 	signal	preF_A			: std_logic_vector (  9 downto 0);
 	signal	preF_B			: std_logic_vector (  9 downto 0);
 	signal	preF_C			: std_logic_vector (  9 downto 0);
 	signal	preF_D			: std_logic_vector (  9 downto 0);
 	signal	EncHitData		: std_logic_vector ( 31 downto 0);
-	signal	EncClock		: std_logic_vector ( 10 downto 0);
+	signal	EncClock			: std_logic_vector ( 10 downto 0);
 	signal	regHitData		: std_logic_vector (127 downto 0);
 	signal	regGSOcount		: std_logic_vector ( 31 downto 0);
 	signal	regFadcAddr		: unsigned ( 9 downto 0);
 	signal	regEncAddr		: unsigned (10 downto 0);
 begin
 EncAddr		<= regEncAddr;
-FadcAddr	<= regFadcAddr;
+FadcAddr		<= regFadcAddr;
 ECntRst		<= RST or CntReset;
 
 process (CLK, RST)
 begin
 	if RST='1' then
-		regState              <= AcqData;
-		regEncode			  <= ClkData;
-		WriteEna              <= '0';
-		Dout                  <= (others => '0');
+		regState				<= AcqData;
+		regEncode			<= ClkData;
+		WriteEna				<= '0';
+		Dout					<= (others => '0');
 	elsif CLK'event and CLK='1' then
-		regState              <= nextState;
-		regEncode             <= nextEncode;
-		WriteEna              <= reg_we;
-		Dout                  <= regDout;
+		regState				<= nextState;
+		regEncode			<= nextEncode;
+		WriteEna				<= reg_we;
+		Dout					<= regDout;
 	end if;
 end process;
 
 process (CLK, RST)
 begin
 	if RST='1' then
-		Run                  <= '0';
+		Run					<= '0';
 	elsif CLK'event and CLK='1' then
 		if regState=AcqData then
-            Run              <= '1';
+			Run				<= '1';
 		else
-			Run              <= '0';
+			Run				<= '0';
 		end if;
 	end if;
 end process;
@@ -144,7 +142,7 @@ begin
 		case regState is
 		when	Header1	=>		regDout	<= EvtCount;
 		when	Header2	=>		regDout	<= LatchedCnt;
-		when    Header3	=>      regDout	<= regGSOcount;
+		when  Header3	=>    regDout	<= regGSOcount;
 		when	FADC_01	=>		regDout	<= "010000" & PreF_A & "010100" & PreF_B;
 		when	FADC_23	=>		regDout	<= "011000" & PreF_C & "011100" & PreF_D;
 		when	EncDt_0	=>		regDout	<= x"1603" & x"1" & '0' & std_logic_vector(ClkDepth);
@@ -185,17 +183,17 @@ end process;
 process (CLK, RST)
 begin
 	if RST='1' then
-        regEncAddr            <= ClkDepth;
-		EncClock              <= (others => '0');
+		regEncAddr			<= ClkDepth;
+		EncClock				<= (others => '0');
 	elsif CLK'event and CLK='1' then
 		if regState=EncDt_1 then
 			if valid='1' and regEncode=ClkData then
-                regEncAddr    <= regEncAddr - 1;
-				EncClock      <= EncClock + 1;
+				regEncAddr	<= regEncAddr - 1;
+				EncClock		<= EncClock + 1;
 			end if;
 		else
-			regEncAddr        <= ClkDepth;
-			EncClock          <= (others => '0');
+			regEncAddr		<= ClkDepth;
+			EncClock			<= (others => '0');
 		end if;
 	end if;
 end process;
@@ -323,6 +321,11 @@ begin
 			nextState		<= Header2;
 		end if;
 	when	Header3	=>
+--		if D_Exist='1' and valid='1' then
+--			nextState		<= FADC_01;
+--		else
+--			nextState		<= Fotter;
+--		end if;
 		if valid='1' then
 			if D_Exist='1' then
 				nextState	<= FADC_01;
@@ -330,7 +333,7 @@ begin
 				nextState	<= Fotter;
 			end if;
 		else
-			nextState		<= Header3;
+			nextState		<= Header2;
 		end if;
 	when	FADC_01	=>
 		if valid='1' then
@@ -369,43 +372,31 @@ begin
 	end case;
 end process;
 
-process (CLK)
-begin
-    if CLK'event and CLK='1' then
-        regTrigger          <= Trigger;
-        reg100us            <= clk100us;
-    end if;
-end process;
-
-process (CLK, ECntRst)
+process (Trigger, ECntRst)
 begin
 	if ECntRst='1' then
-		EvtCount			<= (others => '0');
+		EvtCount				<= (others => '0');
 		LatchedCnt			<= (others => '0');
 		regGSOcount			<= (others => '0');
-    elsif CLK'event and CLK='1' then
-        if Trigger='1' and regTrigger='0' then
-    		EvtCount		<= EvtCount + 1;
-    		LatchedCnt		<= ClkCount;
-    		regGSOcount		<= GSOcounter;
-        end if;
+	elsif Trigger'event and Trigger='1' then
+		EvtCount				<= EvtCount + 1;
+		LatchedCnt			<= ClkCount;
+		regGSOcount			<= GSOcounter;
 	end if;
 end process;
 
-process (CLK, ECntRst)
+process (clk100us, ECntRst)
 begin
 	if ECntRst='1' then
 		ClkCount				<= (others => '0');
-    elsif CLK'event and CLK='1' then
-        if clk100us='1' and reg100us='0' then
-    		ClkCount			<= ClkCount + 1;
-        end if;
+	elsif clk100us'event and clk100us='1' then
+		ClkCount				<= ClkCount + 1;
 	end if;
 end process;
 
-process (CLK, ECntRst)
+process (CLK, RST)
 begin
-	if ECntRst='1' then
+	if RST='1' then
 		clk100us				<= '0';
 		cnt100us				<= (others => '0');
 	elsif CLK'event and CLK='1' then

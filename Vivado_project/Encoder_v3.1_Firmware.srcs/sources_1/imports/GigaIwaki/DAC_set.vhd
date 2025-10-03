@@ -41,30 +41,29 @@ entity DACset is
 		RST					: in	std_logic;
 		ACT					: in	std_logic;
 		Run					: out	std_logic;
-		Ch					: out	std_logic_vector ( 7 downto 0);
-		Data				: in	std_logic_vector ( 7 downto 0);
+		Ch						: out	std_logic_vector ( 7 downto 0);
+		Data					: in	std_logic_vector ( 7 downto 0);
 		
 		-- DAC I/O
-		DAC_SYNC			: out	std_logic;
+		DAC_SYNC				: out	std_logic;
 		DAC_CLK				: out	std_logic;
 		DAC_DIN				: out	std_logic
 	);
 end DACset;
 
 architecture Behavioral of DACset is
-	type	VthState		is (	stay,	u_rd,	d_rd,	ctrl,	wrun );
+	type		VthState		is (	stay,	u_rd,	d_rd,	ctrl,	wrun );
 
-	signal	CtrlClk         : std_logic;
-	signal  reg_cclk        : std_logic;
-	signal	reg_sync        : std_logic;
-	signal	reg_ce          : std_logic;
-	signal	reg_din         : std_logic;
-	signal	reg_Run         : std_logic;
-	signal	dly_ce          : std_logic;
+	signal	CtrlClk		: std_logic;
+	signal	reg_sync		: std_logic;
+	signal	reg_ce		: std_logic;
+	signal	reg_din		: std_logic;
+	signal	reg_Run		: std_logic;
+	signal	dly_ce		: std_logic;
 	signal	regState		: VthState;
-	signal	nextState       : VthState;
-	signal	ClkCount		: std_logic_vector ( 3 downto 0);
-	signal	BitCount		: std_logic_vector ( 3 downto 0);
+	signal	nextState	: VthState;
+	signal	ClkCount		: unsigned ( 3 downto 0);
+	signal	BitCount		: unsigned ( 3 downto 0);
 	signal	DAC_Data		: std_logic_vector (15 downto 0);
 begin
 DAC_CLK		<= CtrlClk		when reg_sync='0'	else	'1';
@@ -73,12 +72,12 @@ Run			<= reg_Run;
 process (CLK, RST)
 begin
 	if RST='1' then
-        ClkCount                 <= (others => '0');
+		ClkCount				<= (others => '0');
 	elsif CLK'event and CLK='1' then
 		if ClkCount > 8 then
-            ClkCount             <= (others => '0');
+			ClkCount			<= (others => '0');
 		else
-			ClkCount             <= ClkCount + 1;
+			ClkCount			<= ClkCount + 1;
 		end if;
 	end if;
 end process;
@@ -87,9 +86,9 @@ process (CLK)
 begin
 	if CLK'event and CLK='1' then
 		if ClkCount < 5 then
-			CtrlClk              <= '1';
+			CtrlClk			<= '1';
 		else
-			CtrlClk              <= '0';
+			CtrlClk			<= '0';
 		end if;
 	end if;
 end process;
@@ -97,15 +96,15 @@ end process;
 process (CLK, RST)
 begin
 	if RST='1' then
-		Ch                       <= (others => '0');
+		Ch						<= (others => '0');
 	elsif CLK'event and CLK='1' then
 		case regState is
 		when u_rd	=>
-			Ch                   <= Addr;
+			Ch					<= Addr;
 		when d_rd	=>
-			Ch                   <= Addr + '1';
+			Ch					<= Addr + '1';
 		when others	=>
-			Ch                   <= (others => '0');
+			Ch					<= (others => '0');
 		end case;
 	end if;
 end process;
@@ -113,93 +112,82 @@ end process;
 process (CLK)
 begin
 	if CLK'event and CLK='1' then
-		dly_ce                   <= reg_ce;
-		DAC_SYNC                 <= reg_sync;
-		reg_cclk                 <= CtrlClk;
+		dly_ce				<= reg_ce;
+		DAC_SYNC				<= reg_sync;
 	end if;
 end process;
 
 process (CLK, RST)
 begin
 	if RST='1' then
-		reg_Run                  <= '0';
+		reg_Run				<= '0';
 	elsif CLK'event and CLK='1' then
 		if ACT='1' then
-			reg_Run              <= '1';
+			reg_Run			<= '1';
 		elsif reg_ce='0' and dly_ce='1' then
-			reg_Run              <= '0';
+			reg_Run			<= '0';
 		end if;
 	end if;
 end process;
 
-process (CLK, RST)
+process (CtrlClk, RST)
 begin
 	if RST='1' then
-		regState                 <= stay;
-	elsif CLK'event and CLK='1' then
-	    if CtrlClk='0' and reg_cclk='1' then
-      		regState             <= nextState;
-        end if;
+		regState				<= stay;
+	elsif CtrlClk'event and CtrlClk='1' then
+		regState				<= nextState;
 	end if;
 end process;
 
-process (CLK, RST)
+process (CtrlClk, RST)
 begin
 	if RST='1' then
-		DAC_Data                       <= (others => '0');
-	elsif CLK'event and CLK='1' then
-        if CtrlClk='1' and reg_cclk='0' then
-       	    if regState=u_rd then
-           	    DAC_Data (15 downto 8)	<= "00" & Data ( 5 downto 0);
-            elsif regState=d_rd then
-		        DAC_Data ( 7 downto 0)	<= Data;
-            elsif regState=ctrl then
-                DAC_Data				<= DAC_Data (14 downto 0) & '0';
-            end if;
-        end if;
+		DAC_Data				<= (others => '0');
+	elsif CtrlClk'event and CtrlClk='0' then
+		if regState=u_rd then
+			DAC_Data (15 downto 8)	<= "00" & Data ( 5 downto 0);
+		elsif regState=d_rd then
+			DAC_Data ( 7 downto 0)	<= Data;
+		elsif regState=ctrl then
+			DAC_Data						<= DAC_Data (14 downto 0) & '0';
+		end if;
 	end if;
 end process;
 
-process (CLK, RST)
+process (CtrlClk, RST)
 begin
 	if RST='1' then
 		BitCount				<= (others => '0');
-	elsif CLK'event and CLK='1' then
-        if CtrlClk='1' and reg_cclk='0' then
-            if regState=ctrl then
-	           BitCount			<= BitCount + 1;
-            else
-               BitCount			<= (others => '0');
-            end if;
+	elsif CtrlClk'event and CtrlClk='1' then
+		if regState=ctrl then
+			BitCount			<= BitCount + 1;
+		else
+			BitCount			<= (others => '0');
 		end if;
 	end if;
 end process;
 
-process (CLK, RST)
+process (CtrlClk, RST)
 begin
 	if RST='1' then
 		reg_sync				<= '1';
 		reg_ce				<= '0';
-	elsif CLK'event and CLK='1' then
-        if CtrlClk='1' and reg_cclk='0' then
-            if regState=ctrl then
-                reg_sync			<= '0';
-                reg_ce			<= '1';
-            else
-                reg_sync			<= '1';
-                reg_ce			<= '0';
-            end if;
+	elsif CtrlClk'event and CtrlClk='1' then
+		if regState=ctrl then
+			reg_sync			<= '0';
+			reg_ce			<= '1';
+		else
+			reg_sync			<= '1';
+			reg_ce			<= '0';
 		end if;
 	end if;
 end process;
 
-process (CLK)
+process (CtrlClk)
 begin
-	if CLK'event and CLK='1' then
-        if CtrlClk='0' and reg_cclk='1' then
-       		reg_din				<= DAC_Data(15);
-       		DAC_DIN				<= reg_din;
-        end if;
+	if CtrlClk'event and CtrlClk='1' then
+		reg_din				<= DAC_Data(15);
+		DAC_DIN				<= reg_din;
 	end if;
 end process;
 

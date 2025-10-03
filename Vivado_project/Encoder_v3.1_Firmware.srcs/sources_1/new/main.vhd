@@ -1,4 +1,3 @@
--- vhdl-linter-disable not-declared type-resolved component
 ----------------------------------------------------------------------------------
 -- Company: 
 -- Engineer: 
@@ -38,7 +37,6 @@ entity main is
         -- Oscillator 50MHz
         OSC_IN              : in    std_logic;
 
-        -- ASIC Discri. out
         XDP                 : in    std_logic_vector (127 downto 0);
         
         -- ADC
@@ -59,9 +57,9 @@ entity main is
 		CHIP_SD				: out	std_logic;
 
 		--  Vth DAC control
-		SYNC				: out	std_logic;
-		SCLK				: out	std_logic;
-		SDIN				: out	std_logic;
+		SYNC					: out	std_logic;
+		SCLK					: out	std_logic;
+		SDIN					: out	std_logic;
 
         --  ADC_BIAS DAC control
         ADC_SYNC            : out   std_logic;
@@ -95,7 +93,7 @@ entity main is
 
         -- Trigger In/Out
         -- TRG_IN              : in    std_logic_vector ( 7 downto 0);
-        TRG_IN              : in    std_logic_vector ( 4 downto 0);
+        TRG_IN              : in    std_logic_vector (4 downto 0);
         TRG_OUT             : out   std_logic_vector ( 7 downto 0);
 
         -- LED
@@ -123,6 +121,7 @@ architecture Behavioral of main is
         O_RESET         : out   std_logic
     );
     end component;
+
     component   WRAP_SiTCP_GMII_XC7S_32K
     generic (
         TIM_PERIOD      : in    std_logic_vector ( 7 downto 0)
@@ -176,6 +175,7 @@ architecture Behavioral of main is
         RBCP_RD         : in    std_logic_vector ( 7 downto 0)
     );
     end component;
+
     component   RBCP_REG
 	port (
         clock               : in    std_logic;
@@ -187,22 +187,26 @@ architecture Behavioral of main is
         rbcp_re             : in    std_logic;
         rbcp_ack            : out   std_logic;
         rbcp_rd             : out   std_logic_vector ( 7 downto 0);
+
         DAC_ack				: out	std_logic;
         DAC_ctrl			: in	std_logic;
         DAC_Ch				: in	std_logic_vector ( 7 downto 0);
         DAC_Data			: out	std_logic_vector ( 7 downto 0);
+
         Vth_ack             : out   std_logic;
         Vth_ctrl            : in    std_logic;
         Vth_Ch              : in    std_logic_vector ( 7 downto 0);
         Vth_Data            : out   std_logic_vector ( 7 downto 0);
+
         ADC_BIAS_ack        : out   std_logic;
         ADC_BIAS_ctrl       : in    std_logic;
         ADC_BIAS_Ch         : in    std_logic_vector (7 downto 0);
         ADC_BIAS_Data       : out   std_logic_vector (7 downto 0);
-        AP_ON               : out   std_logic;
-        LatchUp_Detect      : out   std_logic
+        
+        AP_ON               : out   std_logic
 	);
     end component;
+	
 	component ASIC_DAC_set
 	port	(
 		CLK					: in	std_logic;
@@ -253,6 +257,7 @@ architecture Behavioral of main is
 		dout					: out	std_logic_vector (15 downto 0)
     );
     end component;
+
     component   FADC_reg
     port (
 		CLK					: in	std_logic;
@@ -263,6 +268,8 @@ architecture Behavioral of main is
 		Dout_B				: out	std_logic_vector ( 9 downto 0);
 		Dout_C				: out	std_logic_vector ( 9 downto 0);
 		Dout_D				: out	std_logic_vector ( 9 downto 0);
+		
+		-- FADC I/F
 		FADC_CLK				: out	std_logic;
 		FADC_Set				: out	std_logic_vector ( 1 downto 0);
 		FADC_Data_A			: in	std_logic_vector ( 9 downto 0);
@@ -271,6 +278,7 @@ architecture Behavioral of main is
 		FADC_Data_D			: in	std_logic_vector ( 9 downto 0)
     );
     end component;
+
 	component Formatter
 	generic (
 		ClkDepth				: unsigned ( 10 downto 0)
@@ -295,6 +303,7 @@ architecture Behavioral of main is
 		Dout					: out	std_logic_vector ( 31 downto 0)
 	);
 	end component;
+
     component   fifo_buffer
     port (
         rst             : IN    STD_LOGIC;
@@ -310,10 +319,12 @@ architecture Behavioral of main is
         prog_full       : OUT   STD_LOGIC
     );
     end component;
+
     component   fifo_32
     port (
-        clk             : IN    STD_LOGIC;
-        srst            : IN    STD_LOGIC;
+        rst             : IN    STD_LOGIC;
+        wr_clk          : IN    STD_LOGIC;
+        rd_clk          : IN    STD_LOGIC;
         din             : IN    STD_LOGIC_VECTOR(31 DOWNTO 0);
         wr_en           : IN    STD_LOGIC;
         rd_en           : IN    STD_LOGIC;
@@ -324,19 +335,7 @@ architecture Behavioral of main is
         prog_full       : OUT   STD_LOGIC
     );
     end component;
-    component   LURecover
-    generic (   lu_time     : in    std_logic_vector (15 downto 0);
-                off_time    : in    std_logic_vector (31 downto 0);
-                on_time     : in    std_logic_vector (31 downto 0)  );     
-    Port    (   clk         : in    std_logic;
-                rst         : in    std_logic;
-                hit_flag    : in    std_logic;
-                enable      : in    std_logic;
-                dac_run     : in    std_logic;
-                ap_on       : out   std_logic;
-                dac_ctrl    : out   std_logic   );
-    end component;
-    
+
 
     constant    DriftWait       : unsigned (10 downto 0)    := "100" & x"00";   -- 1024clk * 100MHz
 
@@ -373,13 +372,10 @@ architecture Behavioral of main is
     signal  eth_gtxclk_int      : std_logic;
     signal  gmii_txd            : std_logic_vector ( 7 downto 0);
     signal  st_cnt_clk          : std_logic_vector ( 8 downto 0);
---    signal  st_cnt_lod          : std_logic;
+    signal  st_cnt_lod          : std_logic;
     signal  st_cnt_rst          : std_logic;
     signal  gmii_1000M          : std_logic;
     signal  rx_cnt              : std_logic_vector ( 6 downto 0);
-    signal  cnt_clk             : std_logic_vector ( 8 downto 0);
-    signal  cnt_lod             : std_logic;
-    signal  cnt_rst             : std_logic;
     signal  phy_rst             : std_logic;
     signal  phy_mdc             : std_logic;
     signal  phy_t_mdio          : std_logic;
@@ -390,6 +386,7 @@ architecture Behavioral of main is
     signal  Eep_DiBuf           : std_logic;
     signal  Eep_DoBuf           : std_logic;
 
+    signal  sitcp_rst           : std_logic;
     signal  rbcp_act            : std_logic;
     signal  rbcp_we             : std_logic;
     signal  rbcp_re             : std_logic;
@@ -422,23 +419,16 @@ architecture Behavioral of main is
 	signal	DAC_Clk		: std_logic;
 	signal	DAC_Rst		: std_logic;
 	signal	DAC_SD		: std_logic;
-	signal	DAC_WE_buf  : std_logic;
-	signal	DAC_Clk_buf	: std_logic;
-	signal	DAC_Rst_buf	: std_logic;
-	signal	DAC_SD_buf	: std_logic;
 	signal	DAC_Ch		: std_logic_vector ( 7 downto 0);
 	signal	DAC_Data	: std_logic_vector ( 7 downto 0);
 	
-	signal	Vth_Set		    : std_logic;
-	signal	Vth_Run		    : std_logic;
-	signal	Vth_Sync	    : std_logic;
-	signal	Vth_Clk		    : std_logic;
-	signal	Vth_SD		    : std_logic;
-	signal	Vth_Ch		    : std_logic_vector ( 7 downto 0);
-	signal	Vth_Data	    : std_logic_vector ( 7 downto 0);
-	signal	Vth_SyncBuf	    : std_logic;
-	signal	Vth_ClkBuf	    : std_logic;
-	signal	Vth_SDBuf	    : std_logic;
+	signal	Vth_Set		: std_logic;
+	signal	Vth_Run		: std_logic;
+	signal	Vth_Sync	: std_logic;
+	signal	Vth_Clk		: std_logic;
+	signal	Vth_SD		: std_logic;
+	signal	Vth_Ch		: std_logic_vector ( 7 downto 0);
+	signal	Vth_Data	: std_logic_vector ( 7 downto 0);
 
     signal  ADC_BIAS_Set    : std_logic;
     signal  ADC_BIAS_Run    : std_logic;
@@ -447,9 +437,6 @@ architecture Behavioral of main is
     signal  ADC_BIAS_Sync   : std_logic;
     signal  ADC_BIAS_Clk    : std_logic;
     signal  ADC_BIAS_SD     : std_logic;
-    signal  ADC_Sync_Buf    : std_logic;
-    signal  ADC_Clk_Buf     : std_logic;
-    signal  ADC_SD_Buf      : std_logic;
 
     signal  AP_ON           : std_logic;
 
@@ -478,8 +465,6 @@ architecture Behavioral of main is
     signal  Trigger         : std_logic;
     signal  CntReset        : std_logic;
     signal  TrgCounter      : std_logic_vector (31 downto 0);
-    signal  RegGSOtrg       : std_logic;
-    signal  DlyGSOtrg       : std_logic;
 
     signal  AcqRunFlag      : std_logic;
     signal  ReadEncAddr     : unsigned (10 downto 0);
@@ -530,30 +515,20 @@ architecture Behavioral of main is
     signal  tcp_open_req    : std_logic;
     signal  tcp_close_req   : std_logic;
 
+
     signal  Internal_50MHz  : std_logic;
-    signal  External_50MHz  : std_logic;
 
-    signal  LatchUp_Recover     : std_logic := '0';
-    signal  LatchUp_Detect      : std_logic;
-    signal  LatchUp_Trg         : std_logic_vector (7 downto 0);
-    signal  LatchUp_TrgAll      : std_logic;
 
-    signal  AP_ON_LatchUp       : std_logic;
-    signal  AP_ON_RBCP          : std_logic;
-    signal  LatchUp_AP_RstCnt   : std_logic_vector (27 downto 0) := (others => '0');
-    signal  LatchUp_AP_RstEnd   : std_logic;
-
-    signal  LatchUp_AP_WaitCnt  : std_logic_vector (27 downto 0) := (others => '0');
-    signal  LatchUp_ASICOn      : std_logic;
-
-    signal  DAC_Set_LatchUp     : std_logic;
-    signal  DAC_Set_RBCP        : std_logic;
-    signal  LatchUp_DACRunWait      : std_logic;
 
 begin
 
-SystemRst       <= not locked;
-SysRunning		<= not (SystemRst or SiTCP_Reset);
+
+SystemRst       <= (not locked);
+hit_flag			<= '0'	when hit_16=x"00"	else	'1';
+D_Exist			<= '1'	when DExstCnt > 0	else	'0';
+Hit_Exist		<= '1'	when HExstCnt > 0	else	'0';
+SysRunning		<= not (SystemRst or sitcp_rst or SiTCP_Reset);
+-- Anode...1, Cathode...0
 AC_flag			<= not dip_sw_data(5);
 
 hit_xor(0)		<= hit_two(0) xor hit_16(0);
@@ -577,48 +552,8 @@ ExDoutReg(2)	<= not AcqRunFlag;
 ExDoutReg(3)	<= Trigger;
 ExDoutReg(4)	<= tmp_we;
 ExDoutReg(5)	<= buf_valid;
---ExDoutReg(7)    <= '0';
-ExDoutReg(7)    <= ExDinReg(3);
-
-process(clk_100M)
-begin
-    if clk_100M'event and clk_100M='1' then
-        ExDoutReg(6)	<= TCP_FIFO_Re;
-    end if;
-end process;
-
-process (clk_100M)
-begin
-    if clk_100M'event and clk_100M='1' then
-        if DExstCnt > 0 then
-            D_Exist     <= '1';
-        else
-            D_Exist     <= '0';
-        end if;
-    end if;
-end process;
-
-process (clk_100M)
-begin
-    if clk_100M'event and clk_100M='1' then
-        if hit_16 = x"00" then
-            hit_flag    <= '0';
-        else
-            hit_flag    <= '1';
-        end if;
-    end if;
-end process;
-
-process (clk_100M)
-begin
-    if clk_100M'event and clk_100M='1' then
-        if HExstCnt > 0 then
-            Hit_Exist   <= '1';
-        else
-            Hit_Exist   <= '0';
-        end if;
-    end if;
-end process;
+ExDoutReg(6)	<= TCP_FIFO_Re;
+ExDoutReg(7)    <= '0';
 
 process (clk_100M, SystemRst)
 begin
@@ -691,22 +626,12 @@ begin
 	end if;
 end process;
 
-process (clk_100M)
-begin
-    if clk_100M'event and clk_100M='1' then
-        RegGSOtrg       <= ExDinReg(3);
-        DlyGSOtrg       <= RegGSOtrg;
-    end if;
-end process;
-
-process (SystemRst, CntReset, clk_100M)
+process (SystemRst, CntReset, ExDinReg(3))
 begin
 	if SystemRst='1' or CntReset='1' then
 		TrgCounter	<= (others => '0');
-	elsif clk_100M'event and clk_100M='1' then
-        if RegGSOtrg='1' and DlyGSOtrg='0' then
-    		TrgCounter	<= TrgCounter + 1;
-        end if;
+	elsif ExDinReg(3)'event and ExDinReg(3)='1' then
+		TrgCounter	<= TrgCounter + 1;
 	end if;
 end process;
 
@@ -718,6 +643,7 @@ dip_sw_data(4)  <= not DipSwBuf(4);
 dip_sw_data(5)  <= not DipSwBuf(5); 
 dip_sw_data(6)  <= not DipSwBuf(6); 
 dip_sw_data(7)  <= not DipSwBuf(7); 
+
 DAQ_Run_not     <= not DAQ_Run;
 
 LED_0_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   SLEW    => "SLOW")  port map (  O   => LED_OUT(0),    I   => DAQ_Run_not    );
@@ -726,7 +652,6 @@ LED_2_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   
 LED_3_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   SLEW    => "SLOW")  port map (  O   => LED_OUT(3),    I   => hit_flag    );
 
 TRG_0_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => ExDinReg(0),   I   => TRG_IN(0)   );
-ExClkBuf:   BUFG    port map    (   O   => External_50MHz,      I   => ExDinReg(0) );
 TRG_1_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => ExDinReg(1),   I   => TRG_IN(1)   );
 TRG_2_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => ExDinReg(2),   I   => TRG_IN(2)   );
 TRG_3_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => ExDinReg(3),   I   => TRG_IN(3)   );
@@ -734,6 +659,7 @@ TRG_4_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  
 -- TRG_5_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => ExDinReg(5),   I   => TRG_IN(5)   );
 -- TRG_6_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => ExDinReg(6),   I   => TRG_IN(6)   );
 -- TRG_7_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => ExDinReg(7),   I   => TRG_IN(7)   );
+
 
 TRG_0_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "FAST")  port map (  O   => TRG_OUT(0),    I   => ExDoutReg(0)    );
 TRG_1_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "FAST")  port map (  O   => TRG_OUT(1),    I   => ExDoutReg(1)    );
@@ -745,9 +671,11 @@ TRG_6_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   
 TRG_7_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "FAST")  port map (  O   => TRG_OUT(7),    I   => ExDoutReg(7)    );
 
 
+
+
 -----  Clock  -----
 ClkMaker:   PLLE2_BASE
-generic map (   CLKFBOUT_MULT       => 20,
+generic map (  CLKFBOUT_MULT        => 20,
                 CLKIN1_PERIOD       => 20.000,
                 CLKOUT0_DIVIDE      => 5,
                 CLKOUT0_DUTY_CYCLE  => 0.500,
@@ -770,350 +698,293 @@ port map    (   CLKFBOUT            => pll_clkfb,
                 RST                 => '0'      );
 sys_reset       <= (not locked);
 
+-- OSC_BUF:    IBUF    
+-- generic map (   IOSTANDARD  => "LVCMOS33")
+-- port map    (   O   => Osc50MHz,    I   => OSC_IN);
+
+
 OSC_BUF:    IBUF    
-    generic map (   IOSTANDARD  => "LVCMOS33")
-    port map    (   O   => Internal_50MHz,    I   => OSC_IN );
+generic map (   IOSTANDARD  => "LVCMOS33")
+port map    (   O   => Internal_50MHz,    I   => OSC_IN);
 
---Osc50MHz        <=  ExDinReg(0)     when    dip_sw_data(6)='1'     else    Internal_50MHz;
-Osc_MUX:    BUFGMUX port map    (   O   => Osc50MHz,        I0  => Internal_50MHz,      I1  => External_50MHz,      S   => dip_sw_data(6)   );
+-- process (SystemRst, dip_sw_data(6))
+-- begin
+--     if SystemRst='1' then
+--         Osc50MHz        <= Internal_50MHz;
+--     elsif dip_sw_data(6)='0' then
+--         Osc50MHz        <= Internal_50MHz;
+--     elsif dip_sw_data(6)='1' then
+--         Osc50MHz        <= ExDinReg(0);
+--     end if;
+-- end process;
 
-
-------------- Latch Up Recover
---LatchUp_TrgAll  <= '0' when LatchUp_Trg=x"00" else '1';
-AP_ON           <= AP_ON_RBCP and AP_ON_LatchUp;
-DAC_Set         <= DAC_Set_RBCP or DAC_Set_LatchUp;
-
-LU_Recover  : LURecover
-generic map (   lu_time     => x"2710",        -- 100 us
-                off_time    => x"10000000",    -- 2.68 s
-                on_time     => x"10000000"  )  -- 2.68 s   
-Port map    (   clk         => clk_100M,
-                rst         => SystemRst,
-                hit_flag    => hit_flag,
-                enable      => LatchUp_Detect,
-                dac_run     => DAC_Run,
-                ap_on       => AP_ON_LatchUp,
-                dac_ctrl    => DAC_Set_LatchUp  );
-
----- Analog Power Off
---process (clk_100M, SystemRst, LatchUp_Recover)
---begin
---    if SystemRst='1' or LatchUp_Recover='1' then
---        AP_ON_LatchUp           <= '1';
---        LatchUp_AP_RstCnt       <= (others => '0');
---        LatchUp_AP_RstEnd       <= '0';
---    elsif clk_100M'event and clk_100M='1' then
---        if LatchUp_TrgAll = '1' then
---            if LatchUp_AP_RstCnt/=x"fffffff" then
---                AP_ON_LatchUp       <= '0';
---                LatchUp_AP_RstCnt   <= LatchUp_AP_RstCnt + '1';
---                LatchUp_AP_RstEnd   <= '0';
---            else
---                AP_ON_LatchUp       <= '1';
---                LatchUp_AP_RstCnt   <= LatchUp_AP_RstCnt;
---                LatchUp_AP_RstEnd   <= '1';
---            end if;
---        else
---            AP_ON_LatchUp       <= '1';
---            LatchUp_AP_RstCnt      <= (others => '0');
---            LatchUp_AP_RstEnd      <= '0';
---        end if;
---    end if;
---end process;
-
----- Analog Power On & Waiting
---process (clk_100M, SystemRst, LatchUp_Recover)
---begin
---    if SystemRst='1' or LatchUp_Recover='1' then
---        LatchUp_AP_WaitCnt    <= (others => '0');
---        LatchUp_ASICOn        <= '0';
---    elsif clk_100M'event and clk_100M='1' then
---        if LatchUp_AP_RstEnd='1' then
---            if LatchUp_AP_WaitCnt/=x"fffffff" then
---                LatchUp_AP_WaitCnt  <= LatchUp_AP_WaitCnt + '1';
---                LatchUp_ASICOn      <= '0';
---            else
---                LatchUp_AP_WaitCnt  <= LatchUp_AP_WaitCnt;
---                LatchUp_ASICOn      <= '1';
---            end if;
---        else
---            LatchUp_AP_WaitCnt      <= (others => '0');
---            LatchUp_ASICOn          <= '0';
---        end if;
---    end if;
---end process;
-
----- ASIC DAC Set
---process (clk_100M, SystemRst, LatchUp_Recover)
---begin
---    if SystemRst='1' or LatchUp_Recover='1' then
---        DAC_Set_LatchUp             <= '0';
---        LatchUp_DACRunWait          <= '0';
---    elsif clk_100M'event and clk_100M='1' then
---        if LatchUp_ASICOn='1' then
---            if LatchUp_DACRunWait='0' and DAC_Run='0' then
---                DAC_Set_LatchUp     <= '1';
---                LatchUp_DACRunWait  <= '1';
---            elsif LatchUp_DACRunWait='1' and DAC_Run='1' then
---                DAC_Set_LatchUp     <= '0';
---                LatchUp_DACRunWait  <= '1';
---            end if;
---        else
---            DAC_Set_LatchUp         <= '0';
---            LatchUp_DACRunWait      <= '0';
---        end if;
---    end if;
---end process;
-
----- Latch-Up recover process finish
---process (clk_100M, SystemRst)
---begin
---    if SystemRst='1' then
---        LatchUp_Recover         <= '0';
---    elsif clk_100M'event and clk_100M='1' then
---        if LatchUp_DACRunWait='1' and DAC_Set_LatchUp='0' then
---            if DAC_Run='0' then
---                LatchUp_Recover     <= '1';
---            end if;
---        elsif LatchUp_Recover='1' then
---            if LatchUp_TrgAll='0' and LatchUp_AP_RstEnd='0' and LatchUp_ASICOn='0' then
---                LatchUp_Recover     <= '0';
---            end if;
---        end if;
---    end if;
---end process;
-
-
---------------------------
+process (dip_sw_data(6))
+begin
+    if dip_sw_data(6)='0' then
+        Osc50MHz        <= Internal_50MHz;
+    elsif dip_sw_data(6)='1' then
+        Osc50MHz        <= ExDinReg(0);
+    end if;
+end process;
 
 
 -----  Ring Buffers  -----
 EncRBuf0	: Encoder
-port map    (   clk					=> clk_100M,
-            	rst					=> SystemRst,
-                CathodeSig			=> AC_flag,
-                XDP_IN				=> XDP (  15 downto   0),
-                run					=> AcqRunFlag,
-                hit_flag			=> hit_16 (0),
-                hit_2				=> hit_two (0),
-                hit_3				=> hit_tri (0),
-                addr				=> ReadEncAddr,
-                dout				=> EncData (  15 downto   0)    );
+port map (
+	clk					=> clk_100M,
+	rst					=> SystemRst,
+	CathodeSig			=> AC_flag,
+	XDP_IN				=> XDP (  15 downto   0),
+	run					=> AcqRunFlag,
+	hit_flag				=> hit_16 (0),
+	hit_2					=> hit_two (0),
+	hit_3					=> hit_tri (0),
+	addr					=> ReadEncAddr,
+	dout					=> EncData (  15 downto   0)
+);
+
 EncRBuf1	: Encoder
-port map    (   clk					=> clk_100M,
-                rst					=> SystemRst,
-                CathodeSig			=> AC_flag,
-                XDP_IN				=> XDP (  31 downto  16),
-                run					=> AcqRunFlag,
-                hit_flag			=> hit_16 (1),
-                hit_2				=> hit_two (1),
-                hit_3				=> hit_tri (1),
-                addr				=> ReadEncAddr,
-                dout				=> EncData (  31 downto  16)    );
+port map (
+	clk					=> clk_100M,
+	rst					=> SystemRst,
+	CathodeSig			=> AC_flag,
+	XDP_IN				=> XDP (  31 downto  16),
+	run					=> AcqRunFlag,
+	hit_flag				=> hit_16 (1),
+	hit_2					=> hit_two (1),
+	hit_3					=> hit_tri (1),
+	addr					=> ReadEncAddr,
+	dout					=> EncData (  31 downto  16)
+);
+
 EncRBuf2	: Encoder
-port map    (   clk					=> clk_100M,
-                rst					=> SystemRst,
-                CathodeSig			=> AC_flag,
-                XDP_IN				=> XDP (  47 downto  32),
-                run					=> AcqRunFlag,
-                hit_flag			=> hit_16 (2),
-                hit_2				=> hit_two (2),
-                hit_3				=> hit_tri (2),
-                addr				=> ReadEncAddr,
-                dout				=> EncData (  47 downto  32)    );
+port map (
+	clk					=> clk_100M,
+	rst					=> SystemRst,
+	CathodeSig			=> AC_flag,
+	XDP_IN				=> XDP (  47 downto  32),
+	run					=> AcqRunFlag,
+	hit_flag				=> hit_16 (2),
+	hit_2					=> hit_two (2),
+	hit_3					=> hit_tri (2),
+	addr					=> ReadEncAddr,
+	dout					=> EncData (  47 downto  32)
+);
+
 EncRBuf3	: Encoder
-port map    (   clk					=> clk_100M,
-                rst					=> SystemRst,
-                CathodeSig			=> AC_flag,
-                XDP_IN				=> XDP (  63 downto  48),
-                run					=> AcqRunFlag,
-                hit_flag			=> hit_16 (3),
-                hit_2				=> hit_two (3),
-                hit_3				=> hit_tri (3),
-                addr				=> ReadEncAddr,
-                dout				=> EncData (  63 downto  48)    );
+port map (
+	clk					=> clk_100M,
+	rst					=> SystemRst,
+	CathodeSig			=> AC_flag,
+	XDP_IN				=> XDP (  63 downto  48),
+	run					=> AcqRunFlag,
+	hit_flag				=> hit_16 (3),
+	hit_2					=> hit_two (3),
+	hit_3					=> hit_tri (3),
+	addr					=> ReadEncAddr,
+	dout					=> EncData (  63 downto  48)
+);
+
 EncRBuf4	: Encoder
-port map    (   clk					=> clk_100M,
-                rst					=> SystemRst,
-                CathodeSig			=> AC_flag,
-                XDP_IN				=> XDP (  79 downto  64),
-                run					=> AcqRunFlag,
-                hit_flag			=> hit_16 (4),
-                hit_2				=> hit_two (4),
-                hit_3				=> hit_tri (4),
-                addr				=> ReadEncAddr,
-                dout				=> EncData (  79 downto  64)    );
+port map (
+	clk					=> clk_100M,
+	rst					=> SystemRst,
+	CathodeSig			=> AC_flag,
+	XDP_IN				=> XDP (  79 downto  64),
+	run					=> AcqRunFlag,
+	hit_flag				=> hit_16 (4),
+	hit_2					=> hit_two (4),
+	hit_3					=> hit_tri (4),
+	addr					=> ReadEncAddr,
+	dout					=> EncData (  79 downto  64)
+);
+
 EncRBuf5	: Encoder
-port map    (   clk					=> clk_100M,
-                rst					=> SystemRst,
-                CathodeSig			=> AC_flag,
-                XDP_IN				=> XDP (  95 downto  80),
-                run					=> AcqRunFlag,
-                hit_flag			=> hit_16 (5),
-                hit_2				=> hit_two (5),
-                hit_3				=> hit_tri (5),
-                addr				=> ReadEncAddr,
-                dout				=> EncData (  95 downto  80)    );
+port map (
+	clk					=> clk_100M,
+	rst					=> SystemRst,
+	CathodeSig			=> AC_flag,
+	XDP_IN				=> XDP (  95 downto  80),
+	run					=> AcqRunFlag,
+	hit_flag				=> hit_16 (5),
+	hit_2					=> hit_two (5),
+	hit_3					=> hit_tri (5),
+	addr					=> ReadEncAddr,
+	dout					=> EncData (  95 downto  80)
+);
+
 EncRBuf6	: Encoder
-port map    (   clk					=> clk_100M,
-                rst					=> SystemRst,
-                CathodeSig			=> AC_flag,
-                XDP_IN				=> XDP ( 111 downto  96),
-                run					=> AcqRunFlag,
-                hit_flag			=> hit_16 (6),
-                hit_2				=> hit_two (6),
-                hit_3				=> hit_tri (6),
-                addr				=> ReadEncAddr,
-                dout				=> EncData ( 111 downto  96)    );
+port map (
+	clk					=> clk_100M,
+	rst					=> SystemRst,
+	CathodeSig			=> AC_flag,
+	XDP_IN				=> XDP ( 111 downto  96),
+	run					=> AcqRunFlag,
+	hit_flag				=> hit_16 (6),
+	hit_2					=> hit_two (6),
+	hit_3					=> hit_tri (6),
+	addr					=> ReadEncAddr,
+	dout					=> EncData ( 111 downto  96)
+);
+
 EncRBuf7	: Encoder
-port map    (   clk					=> clk_100M,
-                rst					=> SystemRst,
-                CathodeSig			=> AC_flag,
-                XDP_IN				=> XDP ( 127 downto 112),
-                run					=> AcqRunFlag,
-                hit_flag			=> hit_16 (7),
-                hit_2				=> hit_two (7),
-                hit_3				=> hit_tri (7),
-                addr				=> ReadEncAddr,
-                dout				=> EncData ( 127 downto 112)    );
+port map (
+	clk					=> clk_100M,
+	rst					=> SystemRst,
+	CathodeSig			=> AC_flag,
+	XDP_IN				=> XDP ( 127 downto 112),
+	run					=> AcqRunFlag,
+	hit_flag				=> hit_16 (7),
+	hit_2					=> hit_two (7),
+	hit_3					=> hit_tri (7),
+	addr					=> ReadEncAddr,
+	dout					=> EncData ( 127 downto 112)
+);
+
 
 
 -----  FADC Ring Buffer  -----
 FADCenc	: FADC_reg
-port map (  CLK					=> clk_100M,
-            rst					=> SystemRst,
-            run					=> AcqRunFlag,
-            Addr				=> ReadFADCad,
-            Dout_A				=> Rec_FADC_A,
-            Dout_B				=> Rec_FADC_B,
-            Dout_C				=> Rec_FADC_C,
-            Dout_D				=> Rec_FADC_D,
-            FADC_CLK			=> FADC_CLK,
-            FADC_Set			=> FADC_Set,
-            FADC_Data_A			=> FADC_A_Data,
-            FADC_Data_B			=> FADC_B_Data,
-            FADC_Data_C			=> FADC_C_Data,
-            FADC_Data_D			=> FADC_D_Data    );
+port map (
+	CLK					=> clk_100M,
+	rst					=> SystemRst,
+	run					=> AcqRunFlag,
+	Addr					=> ReadFADCad,
+	Dout_A				=> Rec_FADC_A,
+	Dout_B				=> Rec_FADC_B,
+	Dout_C				=> Rec_FADC_C,
+	Dout_D				=> Rec_FADC_D,
+	FADC_CLK				=> FADC_CLK,
+	FADC_Set				=> FADC_Set,
+	FADC_Data_A			=> FADC_A_Data,
+	FADC_Data_B			=> FADC_B_Data,
+	FADC_Data_C			=> FADC_C_Data,
+	FADC_Data_D			=> FADC_D_Data
+);
 
 FADC_A0_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(0),		I => ADC_A(0) );
+									port map	( O => FADC_A_Data(0),		I => ADC_A(0) );
 FADC_A1_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(1),		I => ADC_A(1) );
+									port map	( O => FADC_A_Data(1),		I => ADC_A(1) );
 FADC_A2_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(2),		I => ADC_A(2) );
+									port map	( O => FADC_A_Data(2),		I => ADC_A(2) );
 FADC_A3_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(3),		I => ADC_A(3) );
+									port map	( O => FADC_A_Data(3),		I => ADC_A(3) );
 FADC_A4_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(4),		I => ADC_A(4) );
+									port map	( O => FADC_A_Data(4),		I => ADC_A(4) );
 FADC_A5_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(5),		I => ADC_A(5) );
+									port map	( O => FADC_A_Data(5),		I => ADC_A(5) );
 FADC_A6_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(6),		I => ADC_A(6) );
+									port map	( O => FADC_A_Data(6),		I => ADC_A(6) );
 FADC_A7_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(7),		I => ADC_A(7) );
+									port map	( O => FADC_A_Data(7),		I => ADC_A(7) );
 FADC_A8_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(8),		I => ADC_A(8) );
+									port map	( O => FADC_A_Data(8),		I => ADC_A(8) );
 FADC_A9_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_A_Data(9),		I => ADC_A(9) );
+									port map	( O => FADC_A_Data(9),		I => ADC_A(9) );
 FADC_B0_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(0),		I => ADC_B(0) );
+									port map	( O => FADC_B_Data(0),		I => ADC_B(0) );
 FADC_B1_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(1),		I => ADC_B(1) );
+									port map	( O => FADC_B_Data(1),		I => ADC_B(1) );
 FADC_B2_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(2),		I => ADC_B(2) );
+									port map	( O => FADC_B_Data(2),		I => ADC_B(2) );
 FADC_B3_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(3),		I => ADC_B(3) );
+									port map	( O => FADC_B_Data(3),		I => ADC_B(3) );
 FADC_B4_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(4),		I => ADC_B(4) );
+									port map	( O => FADC_B_Data(4),		I => ADC_B(4) );
 FADC_B5_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(5),		I => ADC_B(5) );
+									port map	( O => FADC_B_Data(5),		I => ADC_B(5) );
 FADC_B6_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(6),		I => ADC_B(6) );
+									port map	( O => FADC_B_Data(6),		I => ADC_B(6) );
 FADC_B7_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(7),		I => ADC_B(7) );
+									port map	( O => FADC_B_Data(7),		I => ADC_B(7) );
 FADC_B8_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(8),		I => ADC_B(8) );
+									port map	( O => FADC_B_Data(8),		I => ADC_B(8) );
 FADC_B9_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_B_Data(9),		I => ADC_B(9) );
+									port map	( O => FADC_B_Data(9),		I => ADC_B(9) );
 FADC_C0_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(0),		I => ADC_C(0) );
+									port map	( O => FADC_C_Data(0),		I => ADC_C(0) );
 FADC_C1_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(1),		I => ADC_C(1) );
+									port map	( O => FADC_C_Data(1),		I => ADC_C(1) );
 FADC_C2_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(2),		I => ADC_C(2) );
+									port map	( O => FADC_C_Data(2),		I => ADC_C(2) );
 FADC_C3_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(3),		I => ADC_C(3) );
+									port map	( O => FADC_C_Data(3),		I => ADC_C(3) );
 FADC_C4_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(4),		I => ADC_C(4) );
+									port map	( O => FADC_C_Data(4),		I => ADC_C(4) );
 FADC_C5_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(5),		I => ADC_C(5) );
+									port map	( O => FADC_C_Data(5),		I => ADC_C(5) );
 FADC_C6_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(6),		I => ADC_C(6) );
+									port map	( O => FADC_C_Data(6),		I => ADC_C(6) );
 FADC_C7_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(7),		I => ADC_C(7) );
+									port map	( O => FADC_C_Data(7),		I => ADC_C(7) );
 FADC_C8_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(8),		I => ADC_C(8) );
+									port map	( O => FADC_C_Data(8),		I => ADC_C(8) );
 FADC_C9_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_C_Data(9),		I => ADC_C(9) );
+									port map	( O => FADC_C_Data(9),		I => ADC_C(9) );
 FADC_D0_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(0),		I => ADC_D(0) );
+									port map	( O => FADC_D_Data(0),		I => ADC_D(0) );
 FADC_D1_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(1),		I => ADC_D(1) );
+									port map	( O => FADC_D_Data(1),		I => ADC_D(1) );
 FADC_D2_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(2),		I => ADC_D(2) );
+									port map	( O => FADC_D_Data(2),		I => ADC_D(2) );
 FADC_D3_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(3),		I => ADC_D(3) );
+									port map	( O => FADC_D_Data(3),		I => ADC_D(3) );
 FADC_D4_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(4),		I => ADC_D(4) );
+									port map	( O => FADC_D_Data(4),		I => ADC_D(4) );
 FADC_D5_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(5),		I => ADC_D(5) );
+									port map	( O => FADC_D_Data(5),		I => ADC_D(5) );
 FADC_D6_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(6),		I => ADC_D(6) );
+									port map	( O => FADC_D_Data(6),		I => ADC_D(6) );
 FADC_D7_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(7),		I => ADC_D(7) );
+									port map	( O => FADC_D_Data(7),		I => ADC_D(7) );
 FADC_D8_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(8),		I => ADC_D(8) );
+									port map	( O => FADC_D_Data(8),		I => ADC_D(8) );
 FADC_D9_IB			: IBUF	generic map	( IOSTANDARD => "LVCMOS33" )
-							port map	( O => FADC_D_Data(9),		I => ADC_D(9) );
+									port map	( O => FADC_D_Data(9),		I => ADC_D(9) );
 
 FADC_ACLK_OB		: OBUF	generic map	( IOSTANDARD => "LVCMOS33", 	DRIVE => 4,		SLEW => "SLOW" )
-							port map	( O => ADC_CLK(0),			I => FADC_CLK );
+									port map	( O => ADC_CLK(0),			I => FADC_CLK );
 FADC_BCLK_OB		: OBUF	generic map	( IOSTANDARD => "LVCMOS33", 	DRIVE => 4,		SLEW => "SLOW" )
-							port map	( O => ADC_CLK(1),			I => FADC_CLK );
+									port map	( O => ADC_CLK(1),			I => FADC_CLK );
 FADC_CCLK_OB		: OBUF	generic map	( IOSTANDARD => "LVCMOS33", 	DRIVE => 4,		SLEW => "SLOW" )
-							port map	( O => ADC_CLK(2),			I => FADC_CLK );
+									port map	( O => ADC_CLK(2),			I => FADC_CLK );
 FADC_DCLK_OB		: OBUF	generic map	( IOSTANDARD => "LVCMOS33", 	DRIVE => 4,		SLEW => "SLOW" )
-							port map	( O => ADC_CLK(3),			I => FADC_CLK );
+									port map	( O => ADC_CLK(3),			I => FADC_CLK );
 FADC_Set00_OB		: OBUF	generic map	( IOSTANDARD => "LVCMOS33", 	DRIVE => 4,		SLEW => "SLOW" )
-							port map	( O => ADC_Set(0),			I => FADC_Set(0) );
+									port map	( O => ADC_Set(0),			I => FADC_Set(0) );
 FADC_Set01_OB		: OBUF	generic map	( IOSTANDARD => "LVCMOS33", 	DRIVE => 4,		SLEW => "SLOW" )
-							port map	( O => ADC_Set(1),			I => FADC_Set(1) );
+									port map	( O => ADC_Set(1),			I => FADC_Set(1) );
 FADC_Set10_OB		: OBUF	generic map	( IOSTANDARD => "LVCMOS33", 	DRIVE => 4,		SLEW => "SLOW" )
-							port map	( O => ADC_Set(2),			I => FADC_Set(0) );
+									port map	( O => ADC_Set(2),			I => FADC_Set(0) );
 FADC_Set11_OB		: OBUF	generic map	( IOSTANDARD => "LVCMOS33", 	DRIVE => 4,		SLEW => "SLOW" )
-							port map	( O => ADC_Set(3),			I => FADC_Set(1) );
+									port map	( O => ADC_Set(3),			I => FADC_Set(1) );
 
 
 -----  Formatting  -----
 EncFrmtr	: Formatter
-generic map (   ClkDepth				=> DriftWait    )
-port map    (   CLK 					=> clk_100M,
-                RST					    => SystemRst,
-                Trigger				    => Trigger,
-                CntReset				=> CntReset,
-                Run					    => AcqRunFlag,
-                D_Exist				    => Hit_Exist,
-                EncAddr				    => ReadEncAddr,
-                FadcAddr				=> ReadFADCad,
-                HitData				    => EncData,
-                FADC_A				    => Rec_FADC_A,
-                FADC_B				    => Rec_FADC_B,
-                FADC_C				    => Rec_FADC_C,
-                FADC_D				    => Rec_FADC_D,
-                valid					=> enc_valid,
-                GSOcounter			    => TrgCounter,
-                WriteEna				=> tmp_we,
-                Dout					=> tmp_cnt     );
+generic map (
+	ClkDepth				=> DriftWait
+)
+port map (
+	CLK					=> clk_100M,
+	RST					=> SystemRst,
+	Trigger				=> Trigger,
+	CntReset				=> CntReset,
+	Run					=> AcqRunFlag,
+	D_Exist				=> Hit_Exist,
+	EncAddr				=> ReadEncAddr,
+	FadcAddr				=> ReadFADCad,
+	HitData				=> EncData,
+	FADC_A				=> Rec_FADC_A,
+	FADC_B				=> Rec_FADC_B,
+	FADC_C				=> Rec_FADC_C,
+	FADC_D				=> Rec_FADC_D,
+	valid					=> enc_valid,
+	GSOcounter			=> TrgCounter,
+	WriteEna				=> tmp_we,
+	Dout					=> tmp_cnt
+);
 
 process (clk_100M, SystemRst)
 begin
@@ -1125,16 +996,19 @@ begin
 end process;
 
 DataBuf : fifo_32
-port map    (   clk 				=> clk_100M,
-                srst 				=> buf_rst,
-                din 				=> tmp_cnt,
-                wr_en 				=> tmp_we,
-                rd_en 				=> buf_re,
-                dout 				=> buf_dout,
-                full 				=> open,
-                empty 				=> buf_ae,
-                valid				=> buf_valid,
-                prog_full 			=> buf_full    );
+port map (
+	rst 				=> buf_rst,
+	wr_clk 				=> clk_100M,
+	rd_clk 				=> clk_100M,
+	din 				=> tmp_cnt,
+	wr_en 				=> tmp_we,
+	rd_en 				=> buf_re,
+	dout 				=> buf_dout,
+	full 				=> open,
+	empty 				=> buf_ae,
+	valid				=> buf_valid,
+    prog_full 			=> buf_full
+);
 
 process (clk_100M, SystemRst)
 begin
@@ -1160,18 +1034,21 @@ begin
 	end if;
 end process;
 
+
 SiTCPBuf    : fifo_buffer
-port map    (   rst 				=> buf_rst,
-                wr_clk 				=> clk_100M,
-                rd_clk 				=> clk_200M,
-                din 				=> buf_din,
-                wr_en 				=> buf_we,
-                rd_en 				=> TCP_FIFO_Re,
-                dout 				=> TCP_TxData,
-                full 				=> open,
-                empty 				=> TCP_FIFO_Em,
-                valid 				=> TCP_TxWrEna,
-                prog_full 			=> tmp_full    );
+port map (
+	rst 				=> buf_rst,
+	wr_clk 				=> clk_100M,
+	rd_clk 				=> clk_200M,
+	din 				=> buf_din,
+	wr_en 				=> buf_we,
+	rd_en 				=> TCP_FIFO_Re,
+	dout 				=> TCP_TxData,
+	full 				=> open,
+	empty 				=> TCP_FIFO_Em,
+	valid 				=> TCP_TxWrEna,
+    prog_full 			=> tmp_full
+);
 TCP_FIFO_Re		<= TCP_OpenACK and (not TCP_TxFull) and (not TCP_FIFO_Em);
 buf_rst			<= (not DAQ_Run) or SystemRst;
 
@@ -1185,155 +1062,101 @@ end process;
 
 -----  DAC control  -----
 DACctrl		: ASIC_DAC_set
-port map    (   CLK					=> clk_100M,
-	            RST					=> SystemRst,
-                ACT					=> DAC_Set,
-                Run					=> DAC_Run,
-                Ch					=> DAC_Ch,
-                Data				=> DAC_Data,
-                DAC_WE				=> DAC_WE,
-                DAC_CLK				=> DAC_Clk,
-                DAC_RST				=> DAC_Rst,
-                DAC_SD				=> DAC_SD  );
+port map	(
+	CLK					=> clk_100M,
+	RST					=> sitcp_rst,
+	ACT					=> DAC_Set,
+	Run					=> DAC_Run,
+	Ch						=> DAC_Ch,
+	Data					=> DAC_Data,
+	DAC_WE				=> DAC_WE,
+	DAC_CLK				=> DAC_Clk,
+	DAC_RST				=> DAC_Rst,
+	DAC_SD				=> DAC_SD
+);
 
 VthCtrl		: DACset
-generic map (   Addr                => x"80"    )
-port map    (   CLK					=> clk_100M,
-            	RST					=> SystemRst,
-            	ACT					=> Vth_Set,
-	            Run					=> Vth_Run,
-            	Ch					=> Vth_Ch,
-            	Data				=> Vth_Data,
-            	DAC_SYNC			=> Vth_Sync,
-            	DAC_CLK				=> Vth_Clk,
-            	DAC_DIN				=> Vth_SD  );
+generic map (
+    Addr                => x"80"
+)
+port map (
+	CLK					=> clk_100M,
+	RST					=> sitcp_rst,
+	ACT					=> Vth_Set,
+	Run					=> Vth_Run,
+	Ch						=> Vth_Ch,
+	Data					=> Vth_Data,
+	DAC_SYNC				=> Vth_Sync,
+	DAC_CLK				=> Vth_Clk,
+	DAC_DIN				=> Vth_SD
+);
 
 ADC_BIAS_ctrl   : DACset
-generic map (   Addr                => x"82"    )
-port map    (   CLK                 => clk_100M,
-                RST                 => SystemRst,
-                ACT                 => ADC_BIAS_Set,
-                Run                 => ADC_BIAS_Run,
-                Ch                  => ADC_BIAS_Ch,
-                Data                => ADC_BIAS_Data,
-                DAC_SYNC            => ADC_BIAS_Sync,
-                DAC_CLK             => ADC_BIAS_Clk,
-                DAC_DIN             => ADC_BIAS_SD );
+generic map (
+    Addr                => x"82"
+)
+port map (
+    CLK                 => clk_100M,
+    RST                 => sitcp_rst,
+    ACT                 => ADC_BIAS_Set,
+    Run                 => ADC_BIAS_Run,
+    Ch                  => ADC_BIAS_Ch,
+    Data                => ADC_BIAS_Data,
+    DAC_SYNC            => ADC_BIAS_Sync,
+    DAC_CLK             => ADC_BIAS_Clk,
+    DAC_DIN             => ADC_BIAS_SD
+);
 
-
-DAC_WE_FD           : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  DAC_WE_Buf,     C => clk_100M,      D => DAC_WE   );
 DAC_WE_OB			: OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-							port map	( O => CHIP_WR,				I => DAC_WE_Buf );
-DAC_CK_FD           : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  DAC_Clk_Buf,    C => clk_100M,      D => DAC_Clk  );
+									port map	( O => CHIP_WR,				I => DAC_WE );
 DAC_CK_OB			: OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-							port map	( O => CHIP_CK,				I => DAC_Clk_Buf );
-DAC_RB_FD           : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  DAC_Rst_Buf,    C => clk_100M,      D => DAC_Rst  );
+									port map	( O => CHIP_CK,				I => DAC_Clk );
 DAC_RB_OB			: OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-							port map	( O => CHIP_RB,				I => DAC_Rst_Buf );
-DAC_SD_FD           : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  DAC_SD_Buf,     C => clk_100M,      D => DAC_SD   );
+									port map	( O => CHIP_RB,				I => DAC_Rst );
 DAC_SD_OB			: OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-							port map	( O => CHIP_SD,				I => DAC_SD_Buf );
-Vth_Sync_FD         : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  Vth_SyncBuf,    C => clk_100M,  D => Vth_Sync   );
+									port map	( O => CHIP_SD,				I => DAC_SD );
 Vth_SYNC_OB			: OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-							port map	( O => SYNC,					I => Vth_SyncBuf );
-Vth_CLK_FD          : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  Vth_ClkBuf,     C => clk_100M,  D => Vth_Clk    );
+									port map	( O => SYNC,					I => Vth_Sync );
 Vth_CLK_OB			: OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-							port map	( O => SCLK,					I => Vth_ClkBuf  );
-Vth_Data_FD         : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  Vth_SDBuf,      C => clk_100M,  D => Vth_SD     );
+									port map	( O => SCLK,					I => Vth_Clk );
 Vth_DATA_OB			: OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-							port map	( O => SDIN,					I => Vth_SDBuf   );
-ADC_BIAS_Sync_FD    : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  ADC_Sync_Buf,   C => clk_100M,  D => ADC_BIAS_Sync  );
+									port map	( O => SDIN,					I => Vth_SD );
 ADC_BIAS_SYNC_OB    : OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-                            port map    ( O => ADC_SYNC,   I => ADC_Sync_Buf );
-ADC_BIAS_CLK_FD     : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  ADC_Clk_Buf,    C => clk_100M,  D => ADC_BIAS_Clk   );
+                            port map ( O => ADC_SYNC,   I => ADC_BIAS_Sync );
 ADC_BIAS_CLK_OB     : OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-                            port map    ( O => ADC_SCLK,   I => ADC_Clk_Buf  );
-ADC_BIAS_DATA_FD    : FD    generic map ( INIT      => '1'  )
-                            port map    ( Q =>  ADC_SD_Buf,     C => clk_100M,  D => ADC_BIAS_SD    );
+                            port map ( O => ADC_SCLK,   I => ADC_BIAS_Clk );
 ADC_BIAS_DATA_OB    : OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-                            port map    ( O => ADC_SDIN,   I => ADC_SD_Buf );
+                            port map ( O => ADC_SDIN,   I => ADC_BIAS_SD );
 
 
 -----  SiTCP  -----
--- st_cnt_rst は PHY (LAN8810) のリセット信号。
--- PLLがロックされてから198 count (0.99 us) 後にリセット解除。
-
--- st_sys_rst は SiTCP のリセット信号。
--- INIT_LAN8810 の O_RESET と接続されていて、PHYの初期化プロセスを完了するとSiTCPのリセットが解除される。
-
-process(clk_200M, locked)
+process (clk_200M, st_sys_rst)
 begin
-    if locked='0' then
-        st_cnt_clk              <= '0' & x"c6";
+    if st_sys_rst='1' then
+        st_cnt_lod              <= '0';
+        st_cnt_rst              <= '1';
+    elsif clk_200M'event and clk_200M='1' then
+        st_cnt_lod              <= st_cnt_clk(8);
+        st_cnt_rst              <= st_cnt_lod;
+    end if;
+end process;
+
+process (clk_200M, st_sys_rst)
+begin
+    if st_sys_rst='1' then
+        st_cnt_clk              <= (others => '0');
     elsif clk_200M'event and clk_200M='1' then
         if st_cnt_clk(8)='1' then
-            st_cnt_clk          <= (others => '1');            
+            st_cnt_clk          <= '0' & x"c7";
         else
             st_cnt_clk          <= st_cnt_clk - 1;
         end if;
     end if;
 end process;
 
-process (clk_200M, locked)
+process (gmii_rx_clk, st_cnt_rst)
 begin
-    if locked='0' then
-        st_cnt_rst              <= '0';
-    elsif clk_200M'event and clk_200M='1' then
-        st_cnt_rst              <= st_cnt_clk(8);
-    end if;
-end process;
-
--- PHYがMII (RX clock: 25MHz) か GMII (RX clock: 125MHz) かを判定して gmii_1000M を設定する。
--- 200MHz clock で 199 count 中に RX clock の立ち上がりが64 count 以上あれば GMII
-process (clk_200M, st_sys_rst)
-begin
-    if st_sys_rst='1' then
-        cnt_clk                 <= (others => '0');
-    elsif clk_200M'event and clk_200M='1' then
-        if cnt_clk(8)='1' then
-            cnt_clk             <= '0' & x"c7";
-        else
-            cnt_clk             <= cnt_clk - 1;
-        end if;
-    end if;
-end process;
-
-process (clk_200M, st_sys_rst)
-begin
-    if st_sys_rst='1' then
-        cnt_lod                 <= '0';
-        cnt_rst                 <= '1';
-    elsif clk_200M'event and clk_200M='1' then
-        cnt_lod                 <= cnt_clk(8);
-        cnt_rst                 <= cnt_lod;
-    end if;
-end process;
-
-process (clk_200M, st_sys_rst)
-begin
-    if st_sys_rst='1' then
-        gmii_1000M              <= '0';
-    elsif clk_200M'event and clk_200M='1' then
-        if cnt_lod='1' then
-            gmii_1000M          <= rx_cnt(6);  -- (if rx_cnt >= 64)
-        else
-            gmii_1000M          <= gmii_1000M;
-        end if;
-    end if;
-end process;
-
-process (gmii_rx_clk, cnt_rst)
-begin
-    if cnt_rst='1' then
+    if st_cnt_rst='1' then
         rx_cnt                  <= (others => '0');
     elsif gmii_rx_clk'event and gmii_rx_clk='1' then
         if rx_cnt(6)='1' then
@@ -1344,12 +1167,25 @@ begin
     end if;
 end process;
 
--------  SiTCP  -----
+process (clk_200M, st_sys_rst)
+begin
+    if st_sys_rst='1' then
+        gmii_1000M              <= '0';
+    elsif clk_200M'event and clk_200M='1' then
+        if st_cnt_lod='1' then
+            gmii_1000M          <= rx_cnt(6);
+        else
+            gmii_1000M          <= gmii_1000M;
+        end if;
+    end if;
+end process;
+
 IP_SetBit       <= x"c0a864" & "01" & dip_sw_data ( 5 downto 0);
 
+
+-----  SiTCP  -----
 SiTCP:      WRAP_SiTCP_GMII_XC7S_32K
---generic map (   TIM_PERIOD      => x"c8"    )
-generic map (   TIM_PERIOD      => x"96"    )
+generic map (   TIM_PERIOD      => x"c8"    )
 port map    (   CLK             => clk_200M,
                 RST             => st_sys_rst,
                 FORCE_DEFAULTn  => dip_sw_data(7),
@@ -1377,13 +1213,13 @@ port map    (   CLK             => clk_200M,
                 GMII_MDIO_IN    => st_mdio_in,
                 GMII_MDIO_OUT   => st_mdio_out,
                 GMII_MDIO_OE    => st_mdio_oe,
-                SiTCP_RST       => SiTCP_Reset,
+                SiTCP_RST       => sitcp_rst,
                 TCP_OPEN_REQ    => '0',
                 TCP_OPEN_ACK    => TCP_OpenACK,
                 TCP_ERROR       => open,
-                TCP_CLOSE_REQ   => TCP_CloseR,
-                TCP_CLOSE_ACK   => TCP_CloseA,
-                TCP_RX_WC       => (others => '1'),
+                TCP_CLOSE_REQ   => tcp_close_req,
+                TCP_CLOSE_ACK   => tcp_close_req,
+                TCP_RX_WC       => (others => '0'),
                 TCP_RX_WR       => open,
                 TCP_RX_DATA     => open,
                 TCP_TX_FULL	    => TCP_TxFull,
@@ -1397,30 +1233,37 @@ port map    (   CLK             => clk_200M,
                 RBCP_ACK        => rbcp_ack,
                 RBCP_RD         => rbcp_rd  );
 
+
+
 SlwCtrl:    RBCP_REG
-port map (  clock           => clk_200M,
-            reset           => SiTCP_Reset,
-            rbcp_act        => rbcp_act,
-            rbcp_addr       => rbcp_addr,
-            rbcp_wd         => rbcp_wd,
-            rbcp_we         => rbcp_we,
-            rbcp_re         => rbcp_re,
-            rbcp_ack        => rbcp_ack,
-            rbcp_rd         => rbcp_rd,
-            DAC_ack			=> DAC_Set_RBCP,
-            DAC_ctrl		=> DAC_Run,
-            DAC_Ch			=> DAC_Ch,
-            DAC_Data		=> DAC_Data,
-            Vth_ack			=> Vth_Set,
-            Vth_ctrl		=> Vth_Run,
-            Vth_Ch			=> Vth_Ch,
-            Vth_Data		=> Vth_Data,
-            ADC_BIAS_ack    => ADC_BIAS_Set,
-            ADC_BIAS_ctrl   => ADC_BIAS_Run,
-            ADC_BIAS_Ch     => ADC_BIAS_Ch,
-            ADC_BIAS_Data   => ADC_BIAS_Data,
-            AP_ON           => AP_ON_RBCP,
-            LatchUp_Detect  => LatchUp_Detect );
+port map (
+    clock           => clk_200M,
+    reset           => sitcp_rst,
+    rbcp_act        => rbcp_act,
+    rbcp_addr       => rbcp_addr,
+    rbcp_wd         => rbcp_wd,
+    rbcp_we         => rbcp_we,
+    rbcp_re         => rbcp_re,
+    rbcp_ack        => rbcp_ack,
+    rbcp_rd         => rbcp_rd,
+
+    DAC_ack			=> DAC_Set,
+    DAC_ctrl		=> DAC_Run,
+    DAC_Ch			=> DAC_Ch,
+    DAC_Data		=> DAC_Data,
+
+    Vth_ack			=> Vth_Set,
+    Vth_ctrl		=> Vth_Run,
+    Vth_Ch			=> Vth_Ch,
+    Vth_Data		=> Vth_Data,
+
+    ADC_BIAS_ack    => ADC_BIAS_Set,
+    ADC_BIAS_ctrl   => ADC_BIAS_Run,
+    ADC_BIAS_Ch     => ADC_BIAS_Ch,
+    ADC_BIAS_Data   => ADC_BIAS_Data,
+
+    AP_ON           => AP_ON
+);
 
 SW_0_IB:    IOBUF   generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "SLOW")  
                     port map    (   O   => DipSwBuf(0),     IO  => DIP_SW_IN(0),    I   => '0',     T   => '1'  );
@@ -1447,11 +1290,12 @@ SW_7_IB:    IOBUF   generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   
                     port map    (   O   => DipSwBuf(7),     IO  => DIP_SW_IN(7),    I   => '0',     T   => '1'  );
 SW_7_PU:    PULLUP  port map    (   O   => DIP_SW_IN(7)     );                    
 
+
 AP_ON_OB        : OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		SLEW => "SLOW")
-                        port map ( O => ASIC_POWER_OUT,   I => AP_ON );
+                            port map ( O => ASIC_POWER_OUT,   I => AP_ON );
 
 
--------  EEPROM  -----
+-----  EEPROM  -----
 EEP_CS_OB:  OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "SLOW")  port map (  O   => EEPROM_CS_OUT,   I   => Eep_CsBuf    );
 EEP_SK_OB:  OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "SLOW")  port map (  O   => EEPROM_SK_OUT,   I   => Eep_SkBuf    );
 EEP_DI_OB:  OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "SLOW")  port map (  O   => EEPROM_DI_OUT,   I   => Eep_DiBuf    );
@@ -1459,10 +1303,10 @@ EEP_DO_IOB: IOBUF   generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   
 EEP_DO_PD:  PULLDOWN    port map(   O   => EEPROM_DO_IN );
 
 
--------  LAN8810  ----
+-----  LAN8810  ----
 LANinit:    LAN8810_INIT
 generic map (   freqency	    => x"c8"   )
-port map    (   I_nRESET        => st_cnt_rst,
+port map    (   I_nRESET        => locked,
                 CLOCK           => clk_200M,
                 PHY_ADDR        => phy_addr,
                 SiTCP_PHY_nRST  => st_phy_rst, 
@@ -1474,6 +1318,7 @@ port map    (   I_nRESET        => st_cnt_rst,
                 T_MDIO          => phy_t_mdio,
                 PHY_nRESET      => phy_rst,
                 O_RESET         => st_sys_rst   );
+
 
 
 ETH_RST_OB: OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "SLOW")  port map (  O   => ETH_nRST_OUT,    I   => phy_rst      );
@@ -1521,14 +1366,16 @@ E_RX_DV_IB: IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  
 E_RX_DV_DL: IDELAYE2
 generic map (   IDELAY_TYPE => "FIXED", DELAY_SRC => "IDATAIN", IDELAY_VALUE => 0,  HIGH_PERFORMANCE_MODE => "FALSE",   SIGNAL_PATTERN => "DATA",   REFCLK_FREQUENCY => 200.0,  CINVCTRL_SEL => "FALSE",    PIPE_SEL => "FALSE" ) 
 port map    (   C => '0',   REGRST => '0',  LD => '0',  CE => '0',  INC => '0', CINVCTRL => '0', CNTVALUEIN => "00000", IDATAIN => rx_dv_buf,  DATAIN => '0', LDPIPEEN => '0', DATAOUT => gmii_rx_dv,  CNTVALUEOUT => open  );
+
 SR_DL_CTRL: IDELAYCTRL  port map    (   RDY => open,    REFCLK  => clk_200M,    RST => st_sys_rst   );
 E_COL_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => gmii_col,    I   => ETH_RX_COL_IN        );
 E_CRS_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map (  O   => gmii_crs,    I   => ETH_RX_CRS_IN        );
 
+
 E_TXCLK_IB: IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map    (   O   => tx_clk_buf,      I   => ETH_TX_CLK_IN        );
 E_TX_EN_OB: OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "FAST"   )   port map    (   O   => ETH_TX_EN_OUT,       I   => gmii_tx_en       );
 E_TX_ER_OB: OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "FAST"   )   port map    (   O   => ETH_TX_ER_OUT,       I   => gmii_tx_er       );
-GMIIMUX:    BUFGMUX port map    (   O   => gmii_tx_clk,     I0  => tx_clk_buf,      I1  => clk_125M,    S   => gmii_1000M               );
+GMIINUX:    BUFGMUX port map    (   O   => gmii_tx_clk,     I0  => tx_clk_buf,      I1  => clk_125M,    S   => gmii_1000M               );
 IOB_GXT:    ODDR    port map    (   C   => gmii_tx_clk,     CE  => '1',     D1  => '0',     D2  => '1',     R   => '0',     S   => '0',     Q   => eth_gtxclk_int   );
 E_GTXCLKob: OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "FAST"   )   port map    (   O   => ETH_GTXCLK_OUT,      I   => eth_gtxclk_int   );
 E_TXD_0_OB: OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "FAST"   )   port map    (   O   => ETH_TXD_OUT(0),      I   => gmii_txd(0)      );
@@ -1542,6 +1389,8 @@ E_TXD_7_OB: OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   
 
 E_HPD_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   SLEW    => "SLOW"   )   port map    (   O   => ETH_HPD_OUT,         I   => phy_hpd          );
 E_IRQ_IB:   IBUF    generic map (   IOSTANDARD  => "LVCMOS33"   )   port map    (   O   => phy_irq,         I   => ETH_IRQ_IN           );
+
+
 
                 
 end Behavioral;
