@@ -60,7 +60,9 @@ entity RBCP_REG is
             ADC_BIAS_Data       : out   std_logic_vector (7 downto 0);
 
             AP_ON               : out   std_logic;
-            LatchUp_Detect      : out   std_logic
+            LatchUp_Detect      : out   std_logic;
+            LatchUp_RecoverBusy : in    std_logic;
+            LU_TimeDebug        : out   std_logic
      );
 end RBCP_REG;
 
@@ -116,7 +118,47 @@ architecture Behavioral of RBCP_REG is
     signal  ctrl_flag2          : std_logic;
     signal  ctrl_flag3          : std_logic;
 
+    -- 0xF8: LU recovery count (read only)
+    -- 0xF9: LU timing mode, bit 0 (0: normal, 1: debug)
+    signal  LU_BusyMeta         : std_logic;
+    signal  LU_BusySync         : std_logic;
+    signal  LU_BusyPrev         : std_logic;
+    signal  LU_RecoverCount     : std_logic_vector (7 downto 0);
+    signal  LU_TimeDebugReg     : std_logic;
+    signal  LU_RegAddr          : std_logic;
+
 begin
+
+LU_TimeDebug    <= LU_TimeDebugReg;
+LU_RegAddr      <= '1' when irAddr=x"000000f8" or irAddr=x"000000f9" else '0';
+
+process (clock, reset)
+begin
+    if reset='1' then
+        LU_BusyMeta        <= '0';
+        LU_BusySync        <= '0';
+        LU_BusyPrev        <= '0';
+        LU_RecoverCount    <= (others => '0');
+    elsif clock'event and clock='1' then
+        LU_BusyMeta        <= LatchUp_RecoverBusy;
+        LU_BusySync        <= LU_BusyMeta;
+        LU_BusyPrev        <= LU_BusySync;
+        if LU_BusySync='1' and LU_BusyPrev='0' then
+            LU_RecoverCount <= LU_RecoverCount + 1;
+        end if;
+    end if;
+end process;
+
+process (clock, reset)
+begin
+    if reset='1' then
+        LU_TimeDebugReg    <= '0';
+    elsif clock'event and clock='1' then
+        if rbcp_act='1' and irAddr=x"000000f9" and irWe='1' then
+            LU_TimeDebugReg <= irWd(0);
+        end if;
+    end if;
+end process;
 
 process (clock, reset)
 begin
@@ -216,9 +258,15 @@ begin
     elsif clock'event and clock='1' then
         if rbcp_act='1' then
             bufAddr         <= irAddr ( 7 downto 0);
-            bufWe(0)        <= irWe and valid_flag and (not (ctrl_flag or ctrl_flag2 or ctrl_flag3));
+            bufWe(0)        <= irWe and valid_flag and (not (ctrl_flag or ctrl_flag2 or ctrl_flag3)) and (not LU_RegAddr);
             bufDin          <= irWd;
-            bufDout         <= regDout;
+            if irAddr=x"000000f8" then
+                bufDout     <= LU_RecoverCount;
+            elsif irAddr=x"000000f9" then
+                bufDout     <= "0000000" & LU_TimeDebugReg;
+            else
+                bufDout     <= regDout;
+            end if;
 			DAC_Data		<= (others => '0');
             Vth_Data        <= (others => '0');
             ADC_BIAS_Data   <= (others => '0');

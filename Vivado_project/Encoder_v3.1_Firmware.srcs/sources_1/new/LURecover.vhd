@@ -34,17 +34,21 @@ use IEEE.STD_LOGIC_unsigned.all;
 --use UNISIM.VComponents.all;
 
 entity LURecover is
-    generic (   lu_time     : in    std_logic_vector (15 downto 0);
-                off_time    : in    std_logic_vector (31 downto 0);
-                on_time     : in    std_logic_vector (31 downto 0)  );     
-    Port    (   clk         : in    std_logic;
-                rst         : in    std_logic;
-                hit_flag    : in    std_logic;
-                enable      : in    std_logic;
-                dac_run     : in    std_logic;
-                ap_on       : out   std_logic;
-                dac_ctrl    : out   std_logic;
-                recover_busy : out   std_logic   );
+    generic (   lu_time_normal  : in    std_logic_vector (31 downto 0);
+                off_time_normal : in    std_logic_vector (31 downto 0);
+                on_time_normal  : in    std_logic_vector (31 downto 0);
+                lu_time_debug   : in    std_logic_vector (31 downto 0);
+                off_time_debug  : in    std_logic_vector (31 downto 0);
+                on_time_debug   : in    std_logic_vector (31 downto 0)  );
+    Port    (   clk             : in    std_logic;
+                rst             : in    std_logic;
+                hit_flag        : in    std_logic;
+                enable          : in    std_logic;
+                time_debug      : in    std_logic;
+                dac_run         : in    std_logic;
+                ap_on           : out   std_logic;
+                dac_ctrl        : out   std_logic;
+                recover_busy    : out   std_logic   );
 end LURecover;
 
 architecture Behavioral of LURecover is
@@ -53,7 +57,7 @@ architecture Behavioral of LURecover is
     signal      ap_ctrl         : std_logic;
     signal      dac_flag        : std_logic;
     signal      reg_dac         : std_logic;
-    signal      lu_time_cnt     : std_logic_vector (15 downto 0);
+    signal      lu_time_cnt     : std_logic_vector (31 downto 0);
     signal      ap_off_wait     : std_logic_vector (31 downto 0);
     signal      ap_on_wait      : std_logic_vector (31 downto 0);
 begin
@@ -82,7 +86,7 @@ begin
     elsif clk'event and clk='1' then
         if dac_run='0' and reg_dac='1' then
             lu_judge        <= '0';
-        elsif lu_time_cnt=x"0000" then
+        elsif lu_time_cnt=x"00000000" then
             lu_judge        <= '1';
         end if;
     end if;
@@ -124,13 +128,17 @@ begin
         lu_time_cnt         <= (others => '1');
     elsif clk'event and clk='1' then
         if hit_check='1' then
-            if lu_time_cnt=x"0000" then
-                lu_time_cnt <= x"0000";
+            if lu_time_cnt=x"00000000" then
+                lu_time_cnt <= x"00000000";
             else
                 lu_time_cnt <= lu_time_cnt - 1;
             end if;
         else
-            lu_time_cnt     <= lu_time;
+            if time_debug='1' then
+                lu_time_cnt <= lu_time_debug;
+            else
+                lu_time_cnt <= lu_time_normal;
+            end if;
         end if;
     end if;
 end process;
@@ -147,7 +155,11 @@ begin
                 ap_off_wait <= ap_off_wait - 1;
             end if;
         else
-            ap_off_wait     <= off_time;
+            if time_debug='1' then
+                ap_off_wait <= off_time_debug;
+            else
+                ap_off_wait <= off_time_normal;
+            end if;
         end if;
     end if;
 end process;
@@ -164,7 +176,11 @@ begin
                 ap_on_wait  <= ap_on_wait - 1;
             end if;
         else
-            ap_on_wait      <= on_time;
+            if time_debug='1' then
+                ap_on_wait  <= on_time_debug;
+            else
+                ap_on_wait  <= on_time_normal;
+            end if;
         end if;
     end if;
 end process;

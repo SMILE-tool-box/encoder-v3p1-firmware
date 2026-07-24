@@ -200,7 +200,9 @@ architecture Behavioral of main is
         ADC_BIAS_Ch         : in    std_logic_vector (7 downto 0);
         ADC_BIAS_Data       : out   std_logic_vector (7 downto 0);
         AP_ON               : out   std_logic;
-        LatchUp_Detect      : out   std_logic
+        LatchUp_Detect      : out   std_logic;
+        LatchUp_RecoverBusy : in    std_logic;
+        LU_TimeDebug        : out   std_logic
 	);
     end component;
 	component ASIC_DAC_set
@@ -325,17 +327,21 @@ architecture Behavioral of main is
     );
     end component;
     component   LURecover
-    generic (   lu_time     : in    std_logic_vector (15 downto 0);
-                off_time    : in    std_logic_vector (31 downto 0);
-                on_time     : in    std_logic_vector (31 downto 0)  );     
-    Port    (   clk         : in    std_logic;
-                rst         : in    std_logic;
-                hit_flag    : in    std_logic;
-                enable      : in    std_logic;
-                dac_run     : in    std_logic;
-                ap_on       : out   std_logic;
-                dac_ctrl    : out   std_logic;
-                recover_busy : out   std_logic   );
+    generic (   lu_time_normal  : in    std_logic_vector (31 downto 0);
+                off_time_normal : in    std_logic_vector (31 downto 0);
+                on_time_normal  : in    std_logic_vector (31 downto 0);
+                lu_time_debug   : in    std_logic_vector (31 downto 0);
+                off_time_debug  : in    std_logic_vector (31 downto 0);
+                on_time_debug   : in    std_logic_vector (31 downto 0)  );
+    Port    (   clk             : in    std_logic;
+                rst             : in    std_logic;
+                hit_flag        : in    std_logic;
+                enable          : in    std_logic;
+                time_debug      : in    std_logic;
+                dac_run         : in    std_logic;
+                ap_on           : out   std_logic;
+                dac_ctrl        : out   std_logic;
+                recover_busy    : out   std_logic   );
     end component;
     
 
@@ -538,6 +544,9 @@ architecture Behavioral of main is
     signal  LatchUp_Recover     : std_logic := '0';
     signal  LatchUp_Detect      : std_logic;
     signal  LatchUpRecoverBusy  : std_logic;
+    signal  LU_TimeDebugRBCP    : std_logic;
+    signal  LU_TimeDebugMeta    : std_logic;
+    signal  LU_TimeDebug        : std_logic;
     signal  LatchUp_Trg         : std_logic_vector (7 downto 0);
     signal  LatchUp_TrgAll      : std_logic;
 
@@ -787,14 +796,29 @@ Osc_MUX:    BUFGMUX port map    (   O   => Osc50MHz,        I0  => Internal_50MH
 AP_ON           <= AP_ON_RBCP and AP_ON_LatchUp;
 DAC_Set         <= DAC_Set_RBCP or DAC_Set_LatchUp;
 
+process (clk_100M, SystemRst)
+begin
+    if SystemRst='1' then
+        LU_TimeDebugMeta <= '0';
+        LU_TimeDebug     <= '0';
+    elsif clk_100M'event and clk_100M='1' then
+        LU_TimeDebugMeta <= LU_TimeDebugRBCP;
+        LU_TimeDebug     <= LU_TimeDebugMeta;
+    end if;
+end process;
+
 LU_Recover  : LURecover
-generic map (   lu_time     => x"2710",        -- 100 us
-                off_time    => x"10000000",    -- 2.68 s
-                on_time     => x"10000000"  )  -- 2.68 s   
+generic map (   lu_time_normal  => x"00000fa0",    -- 40 us
+                off_time_normal => x"000fa000",    -- 10.24 ms
+                on_time_normal  => x"000fa000",    -- 10.24 ms
+                lu_time_debug   => x"1dcd6500",    -- 5 s
+                off_time_debug  => x"10000000",    -- 2.68 s
+                on_time_debug   => x"10000000"  )  -- 2.68 s
 Port map    (   clk         => clk_100M,
                 rst         => SystemRst,
                 hit_flag    => hit_flag,
                 enable      => LatchUp_Detect,
+                time_debug  => LU_TimeDebug,
                 dac_run     => DAC_Run,
                 ap_on       => AP_ON_LatchUp,
                 dac_ctrl    => DAC_Set_LatchUp,
@@ -1424,8 +1448,10 @@ port map (  clock           => clk_200M,
             ADC_BIAS_ctrl   => ADC_BIAS_Run,
             ADC_BIAS_Ch     => ADC_BIAS_Ch,
             ADC_BIAS_Data   => ADC_BIAS_Data,
-            AP_ON           => AP_ON_RBCP,
-            LatchUp_Detect  => LatchUp_Detect );
+            AP_ON               => AP_ON_RBCP,
+            LatchUp_Detect      => LatchUp_Detect,
+            LatchUp_RecoverBusy => LatchUpRecoverBusy,
+            LU_TimeDebug        => LU_TimeDebugRBCP );
 
 SW_0_IB:    IOBUF   generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 4,   SLEW    => "SLOW")  
                     port map    (   O   => DipSwBuf(0),     IO  => DIP_SW_IN(0),    I   => '0',     T   => '1'  );
