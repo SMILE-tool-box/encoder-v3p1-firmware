@@ -469,8 +469,9 @@ architecture Behavioral of main is
     signal  DExstCnt        : unsigned (10 downto 0);
     signal  HExstCnt        : unsigned (10 downto 0);
 
+    signal  DAQ_Enable         : std_logic;
+    signal  DAQ_Enable_not     : std_logic;
     signal  DAQ_Run         : std_logic;
-    signal  DAQ_Run_not     : std_logic;
     signal  regTrg          : std_logic_vector (4 downto 0);
     signal  regCntRst       : std_logic_vector (4 downto 0);
     signal  ExDinReg        : std_logic_vector (7 downto 0);
@@ -481,7 +482,7 @@ architecture Behavioral of main is
     signal  RegGSOtrg       : std_logic;
     signal  DlyGSOtrg       : std_logic;
 
-    signal  AcqRunFlag      : std_logic;
+    signal  FormatterReady      : std_logic;
     signal  ReadEncAddr     : unsigned (10 downto 0);
     signal  EncData         : std_logic_vector (127 downto 0);
 
@@ -571,9 +572,10 @@ hit_area(2)		<= hit_16(4) or hit_16(5);
 hit_area(3)		<= hit_16(6) or hit_16(7);
 hit_3_area		<= '1'	when	(hit_area=x"7" or hit_area=x"b" or hit_area=x"d" or hit_area=x"e" or hit_area=x"f")	else '0';
 
+DAQ_Run         <= not FormatterReady;
 ExDoutReg(0)	<= hit_flag;
 ExDoutReg(1)	<= D_Exist;
-ExDoutReg(2)	<= not AcqRunFlag;
+ExDoutReg(2)	<= DAQ_Run;
 ExDoutReg(3)	<= Trigger;
 ExDoutReg(4)	<= tmp_we;
 ExDoutReg(5)	<= buf_valid;
@@ -655,11 +657,11 @@ end process;
 process (clk_100M, SystemRst)
 begin
 	if SystemRst='1' then
-		DAQ_Run		<= '0';
+		DAQ_Enable		<= '0';
 		regTrg		<= (others => '0');
 		regCntRst	<= (others => '0');
 	elsif clk_100M'event and clk_100M='1' then
-		DAQ_Run		<= ExDinReg(1);
+		DAQ_Enable		<= ExDinReg(1);
 		regTrg		<= regTrg ( 3 downto 0) & ExDinReg(2);
 		regCntRst	<= regCntRst ( 3 downto 0) & ExDinReg(4);
 	end if;
@@ -718,9 +720,9 @@ dip_sw_data(4)  <= not DipSwBuf(4);
 dip_sw_data(5)  <= not DipSwBuf(5); 
 dip_sw_data(6)  <= not DipSwBuf(6); 
 dip_sw_data(7)  <= not DipSwBuf(7); 
-DAQ_Run_not     <= not DAQ_Run;
+DAQ_Enable_not     <= not DAQ_Enable;
 
-LED_0_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   SLEW    => "SLOW")  port map (  O   => LED_OUT(0),    I   => DAQ_Run_not    );
+LED_0_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   SLEW    => "SLOW")  port map (  O   => LED_OUT(0),    I   => DAQ_Enable_not    );
 LED_1_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   SLEW    => "SLOW")  port map (  O   => LED_OUT(1),    I   => SysRunning    );
 LED_2_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   SLEW    => "SLOW")  port map (  O   => LED_OUT(2),    I   => tmp_we    );
 LED_3_OB:   OBUF    generic map (   IOSTANDARD  => "LVCMOS33",  DRIVE   => 8,   SLEW    => "SLOW")  port map (  O   => LED_OUT(3),    I   => hit_flag    );
@@ -893,7 +895,7 @@ port map    (   clk					=> clk_100M,
             	rst					=> SystemRst,
                 CathodeSig			=> AC_flag,
                 XDP_IN				=> XDP (  15 downto   0),
-                run					=> AcqRunFlag,
+                run					=> FormatterReady,
                 hit_flag			=> hit_16 (0),
                 hit_2				=> hit_two (0),
                 hit_3				=> hit_tri (0),
@@ -904,7 +906,7 @@ port map    (   clk					=> clk_100M,
                 rst					=> SystemRst,
                 CathodeSig			=> AC_flag,
                 XDP_IN				=> XDP (  31 downto  16),
-                run					=> AcqRunFlag,
+                run					=> FormatterReady,
                 hit_flag			=> hit_16 (1),
                 hit_2				=> hit_two (1),
                 hit_3				=> hit_tri (1),
@@ -915,7 +917,7 @@ port map    (   clk					=> clk_100M,
                 rst					=> SystemRst,
                 CathodeSig			=> AC_flag,
                 XDP_IN				=> XDP (  47 downto  32),
-                run					=> AcqRunFlag,
+                run					=> FormatterReady,
                 hit_flag			=> hit_16 (2),
                 hit_2				=> hit_two (2),
                 hit_3				=> hit_tri (2),
@@ -926,7 +928,7 @@ port map    (   clk					=> clk_100M,
                 rst					=> SystemRst,
                 CathodeSig			=> AC_flag,
                 XDP_IN				=> XDP (  63 downto  48),
-                run					=> AcqRunFlag,
+                run					=> FormatterReady,
                 hit_flag			=> hit_16 (3),
                 hit_2				=> hit_two (3),
                 hit_3				=> hit_tri (3),
@@ -937,7 +939,7 @@ port map    (   clk					=> clk_100M,
                 rst					=> SystemRst,
                 CathodeSig			=> AC_flag,
                 XDP_IN				=> XDP (  79 downto  64),
-                run					=> AcqRunFlag,
+                run					=> FormatterReady,
                 hit_flag			=> hit_16 (4),
                 hit_2				=> hit_two (4),
                 hit_3				=> hit_tri (4),
@@ -948,7 +950,7 @@ port map    (   clk					=> clk_100M,
                 rst					=> SystemRst,
                 CathodeSig			=> AC_flag,
                 XDP_IN				=> XDP (  95 downto  80),
-                run					=> AcqRunFlag,
+                run					=> FormatterReady,
                 hit_flag			=> hit_16 (5),
                 hit_2				=> hit_two (5),
                 hit_3				=> hit_tri (5),
@@ -959,7 +961,7 @@ port map    (   clk					=> clk_100M,
                 rst					=> SystemRst,
                 CathodeSig			=> AC_flag,
                 XDP_IN				=> XDP ( 111 downto  96),
-                run					=> AcqRunFlag,
+                run					=> FormatterReady,
                 hit_flag			=> hit_16 (6),
                 hit_2				=> hit_two (6),
                 hit_3				=> hit_tri (6),
@@ -970,7 +972,7 @@ port map    (   clk					=> clk_100M,
                 rst					=> SystemRst,
                 CathodeSig			=> AC_flag,
                 XDP_IN				=> XDP ( 127 downto 112),
-                run					=> AcqRunFlag,
+                run					=> FormatterReady,
                 hit_flag			=> hit_16 (7),
                 hit_2				=> hit_two (7),
                 hit_3				=> hit_tri (7),
@@ -982,7 +984,7 @@ port map    (   clk					=> clk_100M,
 FADCenc	: FADC_reg
 port map (  CLK					=> clk_100M,
             rst					=> SystemRst,
-            run					=> AcqRunFlag,
+            run					=> FormatterReady,
             Addr				=> ReadFADCad,
             Dout_A				=> Rec_FADC_A,
             Dout_B				=> Rec_FADC_B,
@@ -1101,7 +1103,7 @@ port map    (   CLK 					=> clk_100M,
                 RST					    => SystemRst,
                 Trigger				    => Trigger,
                 CntReset				=> CntReset,
-                Run					    => AcqRunFlag,
+                Run					    => FormatterReady,
                 D_Exist				    => Hit_Exist,
                 EncAddr				    => ReadEncAddr,
                 FadcAddr				=> ReadFADCad,
@@ -1120,7 +1122,7 @@ begin
     if SystemRst='1' then
         enc_valid       <= '0';
     elsif clk_100M'event and clk_100M='1' then
-        enc_valid       <= DAQ_Run and (not buf_full);
+        enc_valid       <= DAQ_Enable and (not buf_full);
     end if;
 end process;
 
@@ -1173,7 +1175,7 @@ port map    (   rst 				=> buf_rst,
                 valid 				=> TCP_TxWrEna,
                 prog_full 			=> tmp_full    );
 TCP_FIFO_Re		<= TCP_OpenACK and (not TCP_TxFull) and (not TCP_FIFO_Em);
-buf_rst			<= (not DAQ_Run) or SystemRst;
+buf_rst			<= (not DAQ_Enable) or SystemRst;
 
 process (clk_200M)
 begin
