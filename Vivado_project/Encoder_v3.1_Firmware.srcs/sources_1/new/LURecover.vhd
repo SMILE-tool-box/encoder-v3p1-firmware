@@ -43,7 +43,8 @@ entity LURecover is
                 enable      : in    std_logic;
                 dac_run     : in    std_logic;
                 ap_on       : out   std_logic;
-                dac_ctrl    : out   std_logic   );
+                dac_ctrl    : out   std_logic;
+                recover_busy : out   std_logic   );
 end LURecover;
 
 architecture Behavioral of LURecover is
@@ -56,6 +57,8 @@ architecture Behavioral of LURecover is
     signal      ap_off_wait     : std_logic_vector (31 downto 0);
     signal      ap_on_wait      : std_logic_vector (31 downto 0);
 begin
+
+recover_busy    <= lu_judge;
 
 process(clk, rst)
 begin

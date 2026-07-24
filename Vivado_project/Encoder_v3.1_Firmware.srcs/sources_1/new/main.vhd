@@ -334,7 +334,8 @@ architecture Behavioral of main is
                 enable      : in    std_logic;
                 dac_run     : in    std_logic;
                 ap_on       : out   std_logic;
-                dac_ctrl    : out   std_logic   );
+                dac_ctrl    : out   std_logic;
+                recover_busy : out   std_logic   );
     end component;
     
 
@@ -536,6 +537,7 @@ architecture Behavioral of main is
 
     signal  LatchUp_Recover     : std_logic := '0';
     signal  LatchUp_Detect      : std_logic;
+    signal  LatchUpRecoverBusy  : std_logic;
     signal  LatchUp_Trg         : std_logic_vector (7 downto 0);
     signal  LatchUp_TrgAll      : std_logic;
 
@@ -572,7 +574,7 @@ hit_area(2)		<= hit_16(4) or hit_16(5);
 hit_area(3)		<= hit_16(6) or hit_16(7);
 hit_3_area		<= '1'	when	(hit_area=x"7" or hit_area=x"b" or hit_area=x"d" or hit_area=x"e" or hit_area=x"f")	else '0';
 
-DAQ_Run         <= not FormatterReady;
+DAQ_Run         <= (not DAQ_Enable) or (not FormatterReady) or LatchUpRecoverBusy;
 ExDoutReg(0)	<= hit_flag;
 ExDoutReg(1)	<= D_Exist;
 ExDoutReg(2)	<= DAQ_Run;
@@ -795,7 +797,8 @@ Port map    (   clk         => clk_100M,
                 enable      => LatchUp_Detect,
                 dac_run     => DAC_Run,
                 ap_on       => AP_ON_LatchUp,
-                dac_ctrl    => DAC_Set_LatchUp  );
+                dac_ctrl    => DAC_Set_LatchUp,
+                recover_busy => LatchUpRecoverBusy  );
 
 ---- Analog Power Off
 --process (clk_100M, SystemRst, LatchUp_Recover)
