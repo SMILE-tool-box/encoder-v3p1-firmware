@@ -52,30 +52,58 @@ entity LURecover is
 end LURecover;
 
 architecture Behavioral of LURecover is
+    component ila_LURecover
+    port (
+        clk     : in std_logic;
+        probe0  : in std_logic_vector (0 downto 0);
+        probe1  : in std_logic_vector (0 downto 0);
+        probe2  : in std_logic_vector (0 downto 0);
+        probe3  : in std_logic_vector (0 downto 0);
+        probe4  : in std_logic_vector (0 downto 0);
+        probe5  : in std_logic_vector (31 downto 0);
+        probe6  : in std_logic_vector (0 downto 0);
+        probe7  : in std_logic_vector (31 downto 0);
+        probe8  : in std_logic_vector (0 downto 0);
+        probe9  : in std_logic_vector (0 downto 0);
+        probe10 : in std_logic_vector (31 downto 0);
+        probe11 : in std_logic_vector (0 downto 0);
+        probe12 : in std_logic_vector (0 downto 0);
+        probe13 : in std_logic_vector (0 downto 0);
+        probe14 : in std_logic_vector (0 downto 0);
+        probe15 : in std_logic_vector (0 downto 0);
+        probe16 : in std_logic_vector (2 downto 0)
+    );
+    end component;
+
     signal      hit_check       : std_logic;
     signal      lu_judge        : std_logic;
     signal      ap_ctrl         : std_logic;
     signal      dac_flag        : std_logic;
     signal      reg_dac         : std_logic;
+    signal      reg_ap_on       : std_logic;
+    signal      reg_dac_ctrl    : std_logic;
+    signal      lu_debug_state  : std_logic_vector (2 downto 0);
     signal      lu_time_cnt     : std_logic_vector (31 downto 0);
     signal      ap_off_wait     : std_logic_vector (31 downto 0);
     signal      ap_on_wait      : std_logic_vector (31 downto 0);
 begin
 
 recover_busy    <= lu_judge;
+ap_on           <= reg_ap_on;
+dac_ctrl        <= reg_dac_ctrl;
 
 process(clk, rst)
 begin
     if rst='1' then
         hit_check           <= '0';
-        ap_on               <= '1';
+        reg_ap_on            <= '1';
         reg_dac             <= '0';
-        dac_ctrl            <= '0';
+        reg_dac_ctrl         <= '0';
     elsif clk'event and clk='1' then
         hit_check           <= hit_flag and enable;
-        ap_on               <= ap_ctrl;
+        reg_ap_on            <= ap_ctrl;
         reg_dac             <= dac_run;
-        dac_ctrl            <= dac_flag;
+        reg_dac_ctrl         <= dac_flag;
     end if;
 end process;
 
@@ -184,5 +212,50 @@ begin
         end if;
     end if;
 end process;
+
+process (lu_judge, hit_check, ap_off_wait, ap_on_wait, dac_run, reg_dac)
+begin
+    if lu_judge='0' then
+        if hit_check='1' then
+            lu_debug_state <= "001"; -- HIT_QUALIFY
+        else
+            lu_debug_state <= "000"; -- IDLE
+        end if;
+    elsif reg_dac='1' and dac_run='0' then
+        lu_debug_state     <= "110"; -- DAC_COMPLETE
+    elsif ap_off_wait/=x"00000000" then
+        lu_debug_state     <= "010"; -- POWER_OFF_WAIT
+    elsif ap_on_wait/=x"00000000" then
+        lu_debug_state     <= "011"; -- POWER_ON_WAIT
+    elsif dac_run='0' then
+        lu_debug_state     <= "100"; -- DAC_REQUEST
+    elsif dac_run='1' then
+        lu_debug_state     <= "101"; -- DAC_RUNNING
+    else
+        lu_debug_state     <= "111"; -- INVALID
+    end if;
+end process;
+
+LURecover_ILA : ila_LURecover
+port map (
+    clk        => clk,
+    probe0(0)  => rst,
+    probe1(0)  => hit_flag,
+    probe2(0)  => enable,
+    probe3(0)  => time_debug,
+    probe4(0)  => hit_check,
+    probe5     => lu_time_cnt,
+    probe6(0)  => lu_judge,
+    probe7     => ap_off_wait,
+    probe8(0)  => ap_ctrl,
+    probe9(0)  => reg_ap_on,
+    probe10    => ap_on_wait,
+    probe11(0) => dac_flag,
+    probe12(0) => reg_dac_ctrl,
+    probe13(0) => dac_run,
+    probe14(0) => reg_dac,
+    probe15(0) => lu_judge,
+    probe16    => lu_debug_state
+);
 
 end Behavioral;

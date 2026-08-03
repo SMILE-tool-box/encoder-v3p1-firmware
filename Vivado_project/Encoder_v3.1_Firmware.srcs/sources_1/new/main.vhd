@@ -343,6 +343,43 @@ architecture Behavioral of main is
                 dac_ctrl        : out   std_logic;
                 recover_busy    : out   std_logic   );
     end component;
+
+    component ila_main_LURecover
+    port (
+        clk     : in std_logic;
+        probe0  : in std_logic_vector (0 downto 0);
+        probe1  : in std_logic_vector (0 downto 0);
+        probe2  : in std_logic_vector (7 downto 0);
+        probe3  : in std_logic_vector (0 downto 0);
+        probe4  : in std_logic_vector (0 downto 0);
+        probe5  : in std_logic_vector (0 downto 0);
+        probe6  : in std_logic_vector (0 downto 0);
+        probe7  : in std_logic_vector (0 downto 0);
+        probe8  : in std_logic_vector (0 downto 0);
+        probe9  : in std_logic_vector (0 downto 0);
+        probe10 : in std_logic_vector (0 downto 0);
+        probe11 : in std_logic_vector (0 downto 0);
+        probe12 : in std_logic_vector (0 downto 0);
+        probe13 : in std_logic_vector (0 downto 0);
+        probe14 : in std_logic_vector (0 downto 0);
+        probe15 : in std_logic_vector (0 downto 0);
+        probe16 : in std_logic_vector (0 downto 0);
+        probe17 : in std_logic_vector (7 downto 0);
+        probe18 : in std_logic_vector (7 downto 0);
+        probe19 : in std_logic_vector (0 downto 0);
+        probe20 : in std_logic_vector (0 downto 0);
+        probe21 : in std_logic_vector (0 downto 0);
+        probe22 : in std_logic_vector (0 downto 0);
+        probe23 : in std_logic_vector (0 downto 0);
+        probe24 : in std_logic_vector (0 downto 0);
+        probe25 : in std_logic_vector (0 downto 0);
+        probe26 : in std_logic_vector (0 downto 0);
+        probe27 : in std_logic_vector (31 downto 0);
+        probe28 : in std_logic_vector (7 downto 0);
+        probe29 : in std_logic_vector (0 downto 0);
+        probe30 : in std_logic_vector (7 downto 0)
+    );
+    end component;
     
 
     constant    DriftWait       : unsigned (10 downto 0)    := "100" & x"00";   -- 1024clk * 100MHz
@@ -543,6 +580,7 @@ architecture Behavioral of main is
 
     signal  LatchUp_Recover     : std_logic := '0';
     signal  LatchUp_Detect      : std_logic;
+    signal  LURecoverEnable     : std_logic;
     signal  LatchUpRecoverBusy  : std_logic;
     signal  LU_TimeDebugRBCP    : std_logic;
     signal  LU_TimeDebugMeta    : std_logic;
@@ -795,6 +833,7 @@ Osc_MUX:    BUFGMUX port map    (   O   => Osc50MHz,        I0  => Internal_50MH
 --LatchUp_TrgAll  <= '0' when LatchUp_Trg=x"00" else '1';
 AP_ON           <= AP_ON_RBCP and AP_ON_LatchUp;
 DAC_Set         <= DAC_Set_RBCP or DAC_Set_LatchUp;
+LURecoverEnable <= LatchUp_Detect and DAQ_Enable;
 
 process (clk_100M, SystemRst)
 begin
@@ -817,12 +856,48 @@ generic map (   lu_time_normal  => x"00000fa0",    -- 40 us
 Port map    (   clk         => clk_100M,
                 rst         => SystemRst,
                 hit_flag    => hit_flag,
-                enable      => LatchUp_Detect and DAQ_Enable,
+                enable      => LURecoverEnable,
                 time_debug  => LU_TimeDebug,
                 dac_run     => DAC_Run,
                 ap_on       => AP_ON_LatchUp,
                 dac_ctrl    => DAC_Set_LatchUp,
                 recover_busy => LatchUpRecoverBusy  );
+
+Main_LURecover_ILA : ila_main_LURecover
+port map (
+    clk        => clk_200M,
+    probe0(0)  => SystemRst,
+    probe1(0)  => hit_flag,
+    probe2     => hit_16,
+    probe3(0)  => LatchUp_Detect,
+    probe4(0)  => DAQ_Enable,
+    probe5(0)  => LatchUpRecoverBusy,
+    probe6(0)  => DAQ_Run,
+    probe7(0)  => LU_TimeDebug,
+    probe8(0)  => AP_ON_RBCP,
+    probe9(0)  => AP_ON_LatchUp,
+    probe10(0) => AP_ON,
+    probe11(0) => DAC_Set_RBCP,
+    probe12(0) => DAC_Set_LatchUp,
+    probe13(0) => DAC_Set,
+    probe14(0) => DAC_Run,
+    probe15(0) => Vth_Set,
+    probe16(0) => Vth_Run,
+    probe17    => Vth_Ch,
+    probe18    => Vth_Data,
+    probe19(0) => Vth_Sync,
+    probe20(0) => Vth_Clk,
+    probe21(0) => Vth_SD,
+    probe22(0) => ADC_BIAS_Set,
+    probe23(0) => ADC_BIAS_Run,
+    probe24(0) => rbcp_act,
+    probe25(0) => rbcp_we,
+    probe26(0) => rbcp_re,
+    probe27    => rbcp_addr,
+    probe28    => rbcp_wd,
+    probe29(0) => rbcp_ack,
+    probe30    => rbcp_rd
+);
 
 ---- Analog Power Off
 --process (clk_100M, SystemRst, LatchUp_Recover)
