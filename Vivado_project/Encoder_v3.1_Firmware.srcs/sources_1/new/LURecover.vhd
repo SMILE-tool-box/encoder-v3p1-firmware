@@ -79,6 +79,8 @@ architecture Behavioral of LURecover is
     signal      lu_judge        : std_logic;
     signal      ap_ctrl         : std_logic;
     signal      dac_flag        : std_logic;
+    signal      dac_requested   : std_logic;
+    signal      recover_complete: std_logic;
     signal      reg_dac         : std_logic;
     signal      reg_ap_on       : std_logic;
     signal      reg_dac_ctrl    : std_logic;
@@ -91,6 +93,7 @@ begin
 recover_busy    <= lu_judge;
 ap_on           <= reg_ap_on;
 dac_ctrl        <= reg_dac_ctrl;
+recover_complete <= '1' when dac_requested='1' and reg_dac='1' and dac_run='0' else '0';
 
 process(clk, rst)
 begin
@@ -112,7 +115,7 @@ begin
     if rst='1' then
         lu_judge            <= '0';
     elsif clk'event and clk='1' then
-        if dac_run='0' and reg_dac='1' then
+        if recover_complete='1' then
             lu_judge        <= '0';
         elsif lu_time_cnt=x"00000000" then
             lu_judge        <= '1';
@@ -141,11 +144,14 @@ process(clk, rst)
 begin
     if rst='1' then
         dac_flag            <= '0';
+        dac_requested       <= '0';
     elsif clk'event and clk='1' then
-        if ap_on_wait=x"00000000" and dac_run='0' then
+        dac_flag            <= '0';
+        if lu_judge='0' then
+            dac_requested   <= '0';
+        elsif dac_requested='0' and ap_on_wait=x"00000000" and dac_run='0' and reg_dac='0' then
             dac_flag        <= '1';
-        else
-            dac_flag        <= '0';
+            dac_requested   <= '1';
         end if;
     end if;
 end process;
@@ -155,7 +161,13 @@ begin
     if rst='1' then
         lu_time_cnt         <= (others => '1');
     elsif clk'event and clk='1' then
-        if hit_check='1' then
+        if recover_complete='1' then
+            if time_debug='1' then
+                lu_time_cnt <= lu_time_debug;
+            else
+                lu_time_cnt <= lu_time_normal;
+            end if;
+        elsif hit_check='1' then
             if lu_time_cnt=x"00000000" then
                 lu_time_cnt <= x"00000000";
             else
@@ -213,7 +225,7 @@ begin
     end if;
 end process;
 
-process (lu_judge, hit_check, ap_off_wait, ap_on_wait, dac_run, reg_dac)
+process (lu_judge, hit_check, ap_off_wait, ap_on_wait, dac_run, recover_complete)
 begin
     if lu_judge='0' then
         if hit_check='1' then
@@ -221,7 +233,7 @@ begin
         else
             lu_debug_state <= "000"; -- IDLE
         end if;
-    elsif reg_dac='1' and dac_run='0' then
+    elsif recover_complete='1' then
         lu_debug_state     <= "110"; -- DAC_COMPLETE
     elsif ap_off_wait/=x"00000000" then
         lu_debug_state     <= "010"; -- POWER_OFF_WAIT
@@ -254,7 +266,7 @@ port map (
     probe12(0) => reg_dac_ctrl,
     probe13(0) => dac_run,
     probe14(0) => reg_dac,
-    probe15(0) => lu_judge,
+    probe15(0) => dac_requested,
     probe16    => lu_debug_state
 );
 
