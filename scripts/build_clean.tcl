@@ -1,7 +1,10 @@
 # Usage: vivado -mode batch -source scripts/build_clean.tcl -tclargs <new-output-dir>
 # A fresh project prevents reuse of historical synthesis/place/route checkpoints.
 set root [file normalize [file join [file dirname [info script]] ..]]
-if {$argc != 1} {error "Specify one new output directory"}
+if {$argc < 1 || $argc > 2} {error "Specify output directory and optional internal|external clock mode"}
+set ::env(ENCODER_CLOCK_MODE) internal
+if {$argc == 2} {set ::env(ENCODER_CLOCK_MODE) [lindex $argv 1]}
+if {$::env(ENCODER_CLOCK_MODE) ni {internal external}} {error "Invalid clock mode"}
 set out [file normalize [lindex $argv 0]]
 if {[file exists $out]} {error "Output already exists; use a new directory: $out"}
 file mkdir $out
@@ -24,8 +27,9 @@ update_compile_order -fileset sources_1
 set_property AUTO_INCREMENTAL_CHECKPOINT 0 [get_runs synth_1]
 set_property AUTO_INCREMENTAL_CHECKPOINT 0 [get_runs impl_1]
 set_property STEPS.SYNTH_DESIGN.ARGS.FLATTEN_HIERARCHY rebuilt [get_runs synth_1]
+set_property generate_synth_checkpoint true [get_files -all *.xci]
 generate_target all [get_ips]
-create_ip_run [get_ips]
+foreach ip [get_ips] {create_ip_run $ip}
 launch_runs synth_1 -jobs 4
 wait_on_run synth_1
 if {[get_property PROGRESS [get_runs synth_1]] ne "100%"} {error "Synthesis failed"}
@@ -43,6 +47,7 @@ write_checkpoint [file join $out routed.dcp]
 set f [open [file join $out design_info.txt] w]
 puts $f "Vivado: [version -short]"
 puts $f "Root: $root"
+puts $f "Clock mode: $::env(ENCODER_CLOCK_MODE)"
 puts $f "Debug cores: [get_debug_cores -quiet]"
 puts $f "Incremental synthesis/implementation: disabled"
 close $f
