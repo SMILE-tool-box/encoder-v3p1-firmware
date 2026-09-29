@@ -34,7 +34,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 entity main is
-    generic ( ENABLE_ILA : boolean := true );
+    generic ( ENABLE_ILA : boolean := false );
     Port (
         -- Oscillator 50MHz
         OSC_IN              : in    std_logic;
