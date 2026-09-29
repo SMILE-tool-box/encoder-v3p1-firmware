@@ -36,11 +36,11 @@ python scripts/build_manifest.py C:/path/to/new-output
 
 `build_manifest.py` は統合版にある。他の比較版には、統合版のスクリプトに第2引数でソースリポジトリを指定して使える。
 
-ビルドは毎回新規プロジェクトを作り、synthesis/implementationともincremental checkpointを使用しない。既存出力ディレクトリがある場合は上書きせず終了する。合成・配置配線とsetup/hold確認を通過してからbit/binを作る。Gitに保存されたIPコンテナからIPを生成するため、初回は時間がかかる。
+ビルドは毎回新規プロジェクトを作り、synthesis/implementationともincremental checkpointを使用しない。既存出力ディレクトリがある場合は上書きせず終了する。比較用バイナリはこのスクリプトから作成すること（既存XPRのGUIビルドは同じclean build条件を保証しない）。合成・配置配線とsetup/hold確認を通過してからbit/binを作る。Gitに保存されたIPコンテナからIPを生成するため、初回は時間がかかる。
 
 出力は `main.bit`、`main.bin`、`routed.dcp`、各種レポート。manifestにはソースのコミット・入力ファイルhash・bit/binのSHA-256を記録する。ビルド後にソースを変更してmanifestだけ更新しないこと。実機検証済みフラグは初期状態でfalse。
 
-`fix/ila-io-timing` と統合版では、末尾の `internal` / `external` が制約上のPLL入力選択を指定する。**実機のDIP bit 6と一致させる。** `external` は50 MHzを前提とする。GUIでXPRからビルドする場合の既定値はinternalで、外部を選ぶにはVivado起動環境の `ENCODER_CLOCK_MODE=external` を設定する。FPGAの実際の入力切替ロジック自体は変更していない。比較基準・リセット単独・メモリ単独版は従来のOSC_IN由来の制約を保持する。
+`fix/ila-io-timing` と統合版では、末尾の `internal` / `external` が制約上のPLL入力選択を指定する。**実機のDIP bit 6と一致させる。** `external` は50 MHzを前提とする。GUIのXPRには `clock_mode_internal.xdc` を登録している。外部モードはビルドスクリプトで選択する。XDC自体には条件分岐を置かず、選択したモードの制約ファイルだけを読み込む。論理DIP bit 6 = 0は `DIP_SW_IN[6]` ピンhigh（内部）、1はpin low（外部）。FPGAの実際の入力切替ロジック自体は変更していない。比較基準・リセット単独・メモリ単独版は従来のOSC_IN由来の制約を保持する。
 
 ## 検証
 
