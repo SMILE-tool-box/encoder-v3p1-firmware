@@ -266,7 +266,18 @@ set_property PACKAGE_PIN H24 [get_ports {DIP_SW_IN[6]}]
 set_property PACKAGE_PIN H23 [get_ports {DIP_SW_IN[7]}]
 
 create_clock -period 20.000 -name OSC_IN -waveform {0.000 10.000} [get_ports OSC_IN]
-#create_clock -period 20.000 -name ExtClk -waveform {0.000 10.000} [get_ports {TRG_IN[0]}]
+# Analyze one physical clock-input mode per build. Match DIP bit 6 in hardware.
+# build_clean.tcl's second argument selects the mode; GUI defaults to internal.
+set board_clock_mode internal
+if {[info exists ::env(ENCODER_CLOCK_MODE)]} {set board_clock_mode $::env(ENCODER_CLOCK_MODE)}
+if {$board_clock_mode eq "external"} {
+    create_clock -period 20.000 -name ExtClk -waveform {0.000 10.000} [get_ports {TRG_IN[0]}]
+    set_case_analysis 1 [get_nets {dip_sw_data[6]}]
+} elseif {$board_clock_mode eq "internal"} {
+    set_case_analysis 0 [get_nets {dip_sw_data[6]}]
+} else {
+    error "ENCODER_CLOCK_MODE must be internal or external"
+}
 #set_false_path -from [get_clocks OSC_IN] -to [get_clocks ExtClk]
 #set_false_path -from [get_clocks ExtClk] -to [get_clocks OSC_IN]
 create_clock -period 40.000 -name ETH_TX_CLK_IN -waveform {0.000 20.000} [get_ports ETH_TX_CLK_IN]
@@ -344,7 +355,11 @@ set_false_path -from [get_ports {TRG_IN[0]}] -to [get_ports LED_OUT*]
 
 #### ASIC ####
 set_max_delay -datapath_only -from [get_clocks clk_100M] -to [get_ports ASIC_POWER_OUT] 10.000
-set_max_delay -datapath_only -from [get_clocks clk_100M] -to [get_ports CHIP_CK] 10.000
+# Bound all ASIC control outputs, including previously unconstrained pins.
+# This is an FPGA flight-time bound, not a substitute for FE2009bal tSU/tH.
+set asic_serial_outputs [get_ports {CHIP_CK CHIP_RB CHIP_WR CHIP_SD}]
+set_max_delay -datapath_only -from [get_clocks clk_100M] -to $asic_serial_outputs 10.000
+set_min_delay -from [get_clocks clk_100M] -to $asic_serial_outputs 0.000
 #set_output_delay -clock [get_clocks clk_100M] -max 4.000 [get_ports CHIP_RB]
 #set_output_delay -clock [get_clocks clk_100M] -max 4.000 [get_ports CHIP_WR]
 #set_output_delay -clock [get_clocks clk_100M] -max 4.000 [get_ports CHIP_RB]
@@ -359,20 +374,18 @@ set _xlnx_shared_i0 [get_ports XDP*]
 set_input_delay -clock [get_clocks clk_100M] -min 2.000 $_xlnx_shared_i0
 set_input_delay -clock [get_clocks clk_100M] -max 4.000 $_xlnx_shared_i0
 
-#### DAC ####
-set_max_delay -datapath_only -from [get_clocks clk_100M] -to [get_ports ADC_SCLK] 10.000
-create_generated_clock -source [get_pins ADC_BIAS_CLK_FD/C] -divide_by 10 [get_ports ADC_SCLK]
-set_output_delay -clock ADC_SCLK -max 4.000 [get_ports ADC_SYNC]
-set_output_delay -clock ADC_SCLK -max 4.000 [get_ports ADC_SDIN]
-set_output_delay -clock ADC_SCLK -min 1.000 [get_ports ADC_SYNC]
-set_output_delay -clock ADC_SCLK -min 1.000 [get_ports ADC_SDIN]
-
-set_max_delay -datapath_only -from [get_clocks clk_100M] -to [get_ports SCLK] 10.000
-create_generated_clock -source [get_pins Vth_CLK_FD/C] -divide_by 10 [get_ports SCLK]
-set_output_delay -clock SCLK -max 4.000 [get_ports SYNC]
-set_output_delay -clock SCLK -max 4.000 [get_ports SDIN]
-set_output_delay -clock SCLK -min 1.000 [get_ports SYNC]
-set_output_delay -clock SCLK -min 1.000 [get_ports SDIN]
+#### Serial DAC pin timing ####
+# SCLK is a clock-enable-driven output waveform, not a clock for internal FFs.
+# The serializer changes SDIN 40 ns before the sampling falling edge and SYNC
+# 30 ns before the first falling edge. Constrain ALL forwarded signals against
+# clk_100M to bound pin-to-pin skew, including first/last gated-clock edges.
+# Worst-case budget: <=10 ns C-to-pin difference + 2 ns source-clock skew
+# + 2 ns board skew. Remaining setup: data >=26 ns (AD5640 needs 5),
+# SYNC >=16 ns (needs 13). RTL regression checks these cycle spacings.
+# Board skew is an engineering budget, not a measurement of this board.
+set serial_dac_outputs [get_ports {SCLK SYNC SDIN ADC_SCLK ADC_SYNC ADC_SDIN}]
+set_max_delay -datapath_only -from [get_clocks clk_100M] -to $serial_dac_outputs 10.000
+set_min_delay -from [get_clocks clk_100M] -to $serial_dac_outputs 0.000
 
 #### ADC ####
 set_max_delay -datapath_only -from [get_clocks clk_100M] -to [get_ports {ADC_CLK[0]}] 9.000
@@ -396,7 +409,9 @@ set_max_delay -datapath_only -from [get_clocks clk_100M] -to [get_ports {ADC_CLK
 #set_input_delay -clock [get_clocks {ADC_CLK[3]}] -max -8 [get_ports ADC_D*]
 
 set_false_path -from [get_ports {DIP_SW_IN[*]}]
-set_false_path -from [get_ports {TRG_IN[0]}] -to [get_pins Osc_MUX/I1]
+if {$board_clock_mode eq "internal"} {
+    set_false_path -from [get_ports {TRG_IN[0]}] -to [get_pins Osc_MUX/I1]
+}
 
 
 set_property IOSTANDARD LVCMOS33 [get_ports {ADC_A[9]}]
