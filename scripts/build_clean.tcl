@@ -10,6 +10,7 @@ if {[file exists $out]} {error "Output already exists; use a new directory: $out
 file mkdir $out
 set_param general.maxThreads 4
 set_msg_config -id {Designutils 20-1307} -new_severity ERROR
+set_msg_config -id {Vivado 12-4739} -new_severity ERROR
 create_project ab [file join $out project] -part xc7s100fgga676-2
 set_property target_language VHDL [current_project]
 set sources [file join $root Vivado_project Encoder_v3.1_Firmware.srcs sources_1]
