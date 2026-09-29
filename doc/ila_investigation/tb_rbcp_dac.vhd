@@ -1,4 +1,4 @@
--- Diagnostic regression: the production RBCP_REG and DACset are unmodified.
+-- Regression: RBCP accesses must not change an active DAC transfer.
 -- A two-cycle synchronous RAM models the configured registered BRAM output.
 library ieee;
 use ieee.std_logic_1164.all;
@@ -42,6 +42,7 @@ architecture test of tb_rbcp_dac is
   signal addr: std_logic_vector(31 downto 0) := x"00000000";
   signal wd, rd, ch, data: std_logic_vector(7 downto 0) := x"00";
   signal sc, sy, sd: std_logic;
+  signal asic_ch, asic_data, adc_ch, adc_data : std_logic_vector(7 downto 0) := x"00";
   signal serial_word: std_logic_vector(15 downto 0) := x"0000";
   signal bits: natural := 0;
 begin
@@ -51,9 +52,9 @@ begin
   regs: entity work.RBCP_REG port map (
     clock=>c200, reset=>rst, rbcp_act=>act, rbcp_addr=>addr,
     rbcp_wd=>wd, rbcp_we=>we, rbcp_re=>re, rbcp_ack=>ack, rbcp_rd=>rd,
-    DAC_ack=>open, DAC_ctrl=>'0', DAC_Ch=>x"00", DAC_Data=>open,
+    DAC_ack=>open, DAC_ctrl=>'0', DAC_Ch=>asic_ch, DAC_Data=>asic_data,
     Vth_ack=>req, Vth_ctrl=>busy, Vth_Ch=>ch, Vth_Data=>data,
-    ADC_BIAS_ack=>open, ADC_BIAS_ctrl=>'0', ADC_BIAS_Ch=>x"00", ADC_BIAS_Data=>open,
+    ADC_BIAS_ack=>open, ADC_BIAS_ctrl=>'0', ADC_BIAS_Ch=>adc_ch, ADC_BIAS_Data=>adc_data,
     AP_ON=>open, LatchUp_Detect=>open, LatchUp_RecoverBusy=>'0', LU_TimeDebug=>open);
   dac: entity work.DACset generic map(Addr=>x"80") port map (
     CLK=>c100, RST=>rst, ACT=>req, Run=>busy, Ch=>ch, Data=>data,
@@ -93,7 +94,7 @@ begin
     write_reg(16#F0#,x"01",400 ns);
     wait until sy='1';
     report "RBCP overlap serial word=" & to_hstring(serial_word);
-    assert serial_word/=baseline report "Expected overlap corruption was not reproduced" severity failure;
+    assert serial_word=baseline report "RBCP overlap corrupted DAC data" severity failure;
     wait for 1000 ns;
     write_reg(16#F0#,x"01",20 ns,0 ns);
     if ch/=x"80" then wait until ch=x"80"; end if;
@@ -105,9 +106,32 @@ begin
     wait until falling_edge(c200); act<='0';
     wait until sy='0'; wait until sy='1';
     report "F8 polling overlap serial word=" & to_hstring(serial_word);
-    assert serial_word/=baseline report "Expected polling corruption was not reproduced" severity failure;
-    report "PASS: reproduced DAC payload corruption with production RTL, no ILA";
+    assert serial_word=baseline report "Polling corrupted DAC data" severity failure;
+    -- All three readers have independent access; verify every ASIC address.
+    for i in 0 to 127 loop
+      write_reg(i,std_logic_vector(to_unsigned((i*37+11) mod 256,8)));
+    end loop;
+    write_reg(16#82#,x"2A"); write_reg(16#83#,x"69");
+    for i in 0 to 127 loop
+      asic_ch<=std_logic_vector(to_unsigned(i,8));
+      if i mod 2=0 then adc_ch<=x"82"; else adc_ch<=x"83"; end if;
+      wait for 20 ns;
+      assert asic_data=std_logic_vector(to_unsigned((i*37+11) mod 256,8))
+        report "ASIC configuration mirror mismatch" severity failure;
+      if i mod 2=0 then
+        assert adc_data=x"2A" report "ADC high byte mismatch" severity failure;
+      else
+        assert adc_data=x"69" report "ADC low byte mismatch" severity failure;
+      end if;
+    end loop;
+    -- Control reset must preserve the saved configuration, like the BRAM.
+    rst<='1'; wait for 50 ns; rst<='0'; wait for 100 ns;
+    asic_ch<=x"7F"; adc_ch<=x"83"; wait for 20 ns;
+    assert asic_data=x"66" and adc_data=x"69"
+      report "Control reset erased saved configuration" severity failure;
+    report "PASS: independent ASIC/ADC reads and configuration retention";
+    report "PASS: DAC data preserved across RBCP write tail and F8 polling";
     finish;
   end process;
-  process begin wait for 20 us; assert false report "Timeout" severity failure; end process;
+  process begin wait for 100 us; assert false report "Timeout" severity failure; end process;
 end;
