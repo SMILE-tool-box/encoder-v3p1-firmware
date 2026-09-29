@@ -9,6 +9,7 @@ set out [file normalize [lindex $argv 0]]
 if {[file exists $out]} {error "Output already exists; use a new directory: $out"}
 file mkdir $out
 set_param general.maxThreads 4
+set_msg_config -id {Designutils 20-1307} -new_severity ERROR
 create_project ab [file join $out project] -part xc7s100fgga676-2
 set_property target_language VHDL [current_project]
 set sources [file join $root Vivado_project Encoder_v3.1_Firmware.srcs sources_1]
@@ -20,6 +21,7 @@ foreach dir {new imports/GigaIwaki imports/Desktop} {
 set_property file_type {VHDL 2008} [get_files *.vhd]
 foreach f [glob [file join $sources ip *.xcix]] {import_ip -files $f}
 set constraints [file join $root Vivado_project Encoder_v3.1_Firmware.srcs constrs_1 imports Desktop]
+add_files -fileset constrs_1 [file join $constraints clock_mode_$::env(ENCODER_CLOCK_MODE).xdc]
 add_files -fileset constrs_1 [file join $constraints FE2009bal_u_Gigabit_RO_V3.xdc]
 add_files -fileset constrs_1 [file join $constraints EDF_SiTCP.xdc]
 set_property top main [current_fileset]

@@ -300,6 +300,12 @@
     </FileSet>
     <FileSet Name="constrs_1" Type="Constrs" RelSrcDir="$PSRCDIR/constrs_1" RelGenDir="$PGENDIR/constrs_1">
       <Filter Type="Constrs"/>
+      <File Path="$PSRCDIR/constrs_1/imports/Desktop/clock_mode_internal.xdc">
+        <FileInfo>
+          <Attr Name="UsedIn" Val="synthesis"/>
+          <Attr Name="UsedIn" Val="implementation"/>
+        </FileInfo>
+      </File>
       <File Path="$PSRCDIR/constrs_1/imports/Desktop/FE2009bal_u_Gigabit_RO_V3.xdc">
         <FileInfo>
           <Attr Name="ImportPath" Val="$PPRDIR/../../../Users/at_ta/Desktop/FE2009bal_u_Gigabit_RO_V3.xdc"/>

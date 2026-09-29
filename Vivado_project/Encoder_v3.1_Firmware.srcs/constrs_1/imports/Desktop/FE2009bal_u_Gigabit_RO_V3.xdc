@@ -266,18 +266,7 @@ set_property PACKAGE_PIN H24 [get_ports {DIP_SW_IN[6]}]
 set_property PACKAGE_PIN H23 [get_ports {DIP_SW_IN[7]}]
 
 create_clock -period 20.000 -name OSC_IN -waveform {0.000 10.000} [get_ports OSC_IN]
-# Analyze one physical clock-input mode per build. Match DIP bit 6 in hardware.
-# build_clean.tcl's second argument selects the mode; GUI defaults to internal.
-set board_clock_mode internal
-if {[info exists ::env(ENCODER_CLOCK_MODE)]} {set board_clock_mode $::env(ENCODER_CLOCK_MODE)}
-if {$board_clock_mode eq "external"} {
-    create_clock -period 20.000 -name ExtClk -waveform {0.000 10.000} [get_ports {TRG_IN[0]}]
-    set_case_analysis 1 [get_nets {dip_sw_data[6]}]
-} elseif {$board_clock_mode eq "internal"} {
-    set_case_analysis 0 [get_nets {dip_sw_data[6]}]
-} else {
-    error "ENCODER_CLOCK_MODE must be internal or external"
-}
+# Clock input selection is defined by clock_mode_internal/external.xdc.
 #set_false_path -from [get_clocks OSC_IN] -to [get_clocks ExtClk]
 #set_false_path -from [get_clocks ExtClk] -to [get_clocks OSC_IN]
 create_clock -period 40.000 -name ETH_TX_CLK_IN -waveform {0.000 20.000} [get_ports ETH_TX_CLK_IN]
@@ -409,9 +398,6 @@ set_max_delay -datapath_only -from [get_clocks clk_100M] -to [get_ports {ADC_CLK
 #set_input_delay -clock [get_clocks {ADC_CLK[3]}] -max -8 [get_ports ADC_D*]
 
 set_false_path -from [get_ports {DIP_SW_IN[*]}]
-if {$board_clock_mode eq "internal"} {
-    set_false_path -from [get_ports {TRG_IN[0]}] -to [get_pins Osc_MUX/I1]
-}
 
 
 set_property IOSTANDARD LVCMOS33 [get_ports {ADC_A[9]}]
