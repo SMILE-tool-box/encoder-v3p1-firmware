@@ -34,7 +34,8 @@ use IEEE.STD_LOGIC_unsigned.all;
 --use UNISIM.VComponents.all;
 
 entity LURecover is
-    generic (   lu_time_normal  : in    std_logic_vector (31 downto 0);
+    generic (   enable_ila      : boolean := true;
+                lu_time_normal  : in    std_logic_vector (31 downto 0);
                 off_time_normal : in    std_logic_vector (31 downto 0);
                 on_time_normal  : in    std_logic_vector (31 downto 0);
                 lu_time_debug   : in    std_logic_vector (31 downto 0);
@@ -225,6 +226,7 @@ begin
     end if;
 end process;
 
+gen_ila : if enable_ila generate
 process (lu_judge, hit_check, ap_off_wait, ap_on_wait, dac_run, recover_complete)
 begin
     if lu_judge='0' then
@@ -269,5 +271,7 @@ port map (
     probe15(0) => dac_requested,
     probe16    => lu_debug_state
 );
+
+end generate;
 
 end Behavioral;

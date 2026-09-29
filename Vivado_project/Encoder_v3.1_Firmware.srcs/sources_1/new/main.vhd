@@ -34,6 +34,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 entity main is
+    generic ( ENABLE_ILA : boolean := true );
     Port (
         -- Oscillator 50MHz
         OSC_IN              : in    std_logic;
@@ -327,7 +328,8 @@ architecture Behavioral of main is
     );
     end component;
     component   LURecover
-    generic (   lu_time_normal  : in    std_logic_vector (31 downto 0);
+    generic (   enable_ila      : boolean := true;
+                lu_time_normal  : in    std_logic_vector (31 downto 0);
                 off_time_normal : in    std_logic_vector (31 downto 0);
                 on_time_normal  : in    std_logic_vector (31 downto 0);
                 lu_time_debug   : in    std_logic_vector (31 downto 0);
@@ -847,7 +849,8 @@ begin
 end process;
 
 LU_Recover  : LURecover
-generic map (   lu_time_normal  => x"00000fa0",    -- 40 us
+generic map (   enable_ila      => ENABLE_ILA,
+                lu_time_normal  => x"00000fa0",    -- 40 us
                 off_time_normal => x"000fa000",    -- 10.24 ms
                 on_time_normal  => x"000fa000",    -- 10.24 ms
                 lu_time_debug   => x"1dcd6500",    -- 5 s
@@ -863,6 +866,7 @@ Port map    (   clk         => clk_100M,
                 dac_ctrl    => DAC_Set_LatchUp,
                 recover_busy => LatchUpRecoverBusy  );
 
+gen_main_ila : if ENABLE_ILA generate
 Main_LURecover_ILA : ila_main_LURecover
 port map (
     clk        => clk_200M,
@@ -898,6 +902,7 @@ port map (
     probe29(0) => rbcp_ack,
     probe30    => rbcp_rd
 );
+end generate;
 
 ---- Analog Power Off
 --process (clk_100M, SystemRst, LatchUp_Recover)
