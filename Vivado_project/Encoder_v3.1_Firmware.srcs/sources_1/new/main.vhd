@@ -395,6 +395,8 @@ architecture Behavioral of main is
     signal  clk_125M_buf        : std_logic;
     signal  clk_200M_buf        : std_logic;
     signal  SystemRst           : std_logic;
+    signal  pll_reset_async     : std_logic;
+    signal  rbcp_reset          : std_logic;
     
     signal  GMII_RSTn          : std_logic;
     signal  st_mdc              : std_logic;
@@ -604,7 +606,13 @@ architecture Behavioral of main is
 
 begin
 
-SystemRst       <= not locked;
+pll_reset_async <= not locked;
+Reset100 : entity work.reset_release
+    port map (clk => clk_100M, arst => pll_reset_async, rst => SystemRst);
+Reset200 : entity work.reset_release
+    port map (clk => clk_200M, arst => pll_reset_async, rst => sys_reset);
+ResetRBCP : entity work.reset_release
+    port map (clk => clk_200M, arst => SiTCP_Reset, rst => rbcp_reset);
 SysRunning		<= not (SystemRst or SiTCP_Reset);
 AC_flag			<= not dip_sw_data(5);
 
@@ -821,7 +829,7 @@ port map    (   CLKFBOUT            => pll_clkfb,
                 CLKIN1              => Osc50MHz,
                 PWRDWN              => '0',
                 RST                 => '0'      );
-sys_reset       <= (not locked);
+-- sys_reset is released synchronously by Reset200.
 
 OSC_BUF:    IBUF    
     generic map (   IOSTANDARD  => "LVCMOS33")
@@ -1379,9 +1387,9 @@ ADC_BIAS_DATA_OB    : OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		
 -- st_sys_rst は SiTCP のリセット信号。
 -- INIT_LAN8810 の O_RESET と接続されていて、PHYの初期化プロセスを完了するとSiTCPのリセットが解除される。
 
-process(clk_200M, locked)
+process(clk_200M, sys_reset)
 begin
-    if locked='0' then
+    if sys_reset='1' then
         st_cnt_clk              <= '0' & x"c6";
     elsif clk_200M'event and clk_200M='1' then
         if st_cnt_clk(8)='1' then
@@ -1392,9 +1400,9 @@ begin
     end if;
 end process;
 
-process (clk_200M, locked)
+process (clk_200M, sys_reset)
 begin
-    if locked='0' then
+    if sys_reset='1' then
         st_cnt_rst              <= '0';
     elsif clk_200M'event and clk_200M='1' then
         st_cnt_rst              <= st_cnt_clk(8);
@@ -1508,7 +1516,7 @@ port map    (   CLK             => clk_200M,
 
 SlwCtrl:    RBCP_REG
 port map (  clock           => clk_200M,
-            reset           => SiTCP_Reset,
+            reset           => rbcp_reset,
             rbcp_act        => rbcp_act,
             rbcp_addr       => rbcp_addr,
             rbcp_wd         => rbcp_wd,
