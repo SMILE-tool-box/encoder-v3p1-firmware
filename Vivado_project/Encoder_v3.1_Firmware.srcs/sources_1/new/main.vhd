@@ -34,6 +34,7 @@ library UNISIM;
 use UNISIM.VComponents.all;
 
 entity main is
+    generic ( ENABLE_ILA : boolean := false );
     Port (
         -- Oscillator 50MHz
         OSC_IN              : in    std_logic;
@@ -327,7 +328,8 @@ architecture Behavioral of main is
     );
     end component;
     component   LURecover
-    generic (   lu_time_normal  : in    std_logic_vector (31 downto 0);
+    generic (   enable_ila      : boolean := true;
+                lu_time_normal  : in    std_logic_vector (31 downto 0);
                 off_time_normal : in    std_logic_vector (31 downto 0);
                 on_time_normal  : in    std_logic_vector (31 downto 0);
                 lu_time_debug   : in    std_logic_vector (31 downto 0);
@@ -343,6 +345,43 @@ architecture Behavioral of main is
                 dac_ctrl        : out   std_logic;
                 recover_busy    : out   std_logic   );
     end component;
+
+    component ila_main_LURecover
+    port (
+        clk     : in std_logic;
+        probe0  : in std_logic_vector (0 downto 0);
+        probe1  : in std_logic_vector (0 downto 0);
+        probe2  : in std_logic_vector (7 downto 0);
+        probe3  : in std_logic_vector (0 downto 0);
+        probe4  : in std_logic_vector (0 downto 0);
+        probe5  : in std_logic_vector (0 downto 0);
+        probe6  : in std_logic_vector (0 downto 0);
+        probe7  : in std_logic_vector (0 downto 0);
+        probe8  : in std_logic_vector (0 downto 0);
+        probe9  : in std_logic_vector (0 downto 0);
+        probe10 : in std_logic_vector (0 downto 0);
+        probe11 : in std_logic_vector (0 downto 0);
+        probe12 : in std_logic_vector (0 downto 0);
+        probe13 : in std_logic_vector (0 downto 0);
+        probe14 : in std_logic_vector (0 downto 0);
+        probe15 : in std_logic_vector (0 downto 0);
+        probe16 : in std_logic_vector (0 downto 0);
+        probe17 : in std_logic_vector (7 downto 0);
+        probe18 : in std_logic_vector (7 downto 0);
+        probe19 : in std_logic_vector (0 downto 0);
+        probe20 : in std_logic_vector (0 downto 0);
+        probe21 : in std_logic_vector (0 downto 0);
+        probe22 : in std_logic_vector (0 downto 0);
+        probe23 : in std_logic_vector (0 downto 0);
+        probe24 : in std_logic_vector (0 downto 0);
+        probe25 : in std_logic_vector (0 downto 0);
+        probe26 : in std_logic_vector (0 downto 0);
+        probe27 : in std_logic_vector (31 downto 0);
+        probe28 : in std_logic_vector (7 downto 0);
+        probe29 : in std_logic_vector (0 downto 0);
+        probe30 : in std_logic_vector (7 downto 0)
+    );
+    end component;
     
 
     constant    DriftWait       : unsigned (10 downto 0)    := "100" & x"00";   -- 1024clk * 100MHz
@@ -356,6 +395,8 @@ architecture Behavioral of main is
     signal  clk_125M_buf        : std_logic;
     signal  clk_200M_buf        : std_logic;
     signal  SystemRst           : std_logic;
+    signal  pll_reset_async     : std_logic;
+    signal  rbcp_reset          : std_logic;
     
     signal  GMII_RSTn          : std_logic;
     signal  st_mdc              : std_logic;
@@ -543,6 +584,7 @@ architecture Behavioral of main is
 
     signal  LatchUp_Recover     : std_logic := '0';
     signal  LatchUp_Detect      : std_logic;
+    signal  LURecoverEnable     : std_logic;
     signal  LatchUpRecoverBusy  : std_logic;
     signal  LU_TimeDebugRBCP    : std_logic;
     signal  LU_TimeDebugMeta    : std_logic;
@@ -564,7 +606,13 @@ architecture Behavioral of main is
 
 begin
 
-SystemRst       <= not locked;
+pll_reset_async <= not locked;
+Reset100 : entity work.reset_release
+    port map (clk => clk_100M, arst => pll_reset_async, rst => SystemRst);
+Reset200 : entity work.reset_release
+    port map (clk => clk_200M, arst => pll_reset_async, rst => sys_reset);
+ResetRBCP : entity work.reset_release
+    port map (clk => clk_200M, arst => SiTCP_Reset, rst => rbcp_reset);
 SysRunning		<= not (SystemRst or SiTCP_Reset);
 AC_flag			<= not dip_sw_data(5);
 
@@ -781,7 +829,7 @@ port map    (   CLKFBOUT            => pll_clkfb,
                 CLKIN1              => Osc50MHz,
                 PWRDWN              => '0',
                 RST                 => '0'      );
-sys_reset       <= (not locked);
+-- sys_reset is released synchronously by Reset200.
 
 OSC_BUF:    IBUF    
     generic map (   IOSTANDARD  => "LVCMOS33")
@@ -795,6 +843,7 @@ Osc_MUX:    BUFGMUX port map    (   O   => Osc50MHz,        I0  => Internal_50MH
 --LatchUp_TrgAll  <= '0' when LatchUp_Trg=x"00" else '1';
 AP_ON           <= AP_ON_RBCP and AP_ON_LatchUp;
 DAC_Set         <= DAC_Set_RBCP or DAC_Set_LatchUp;
+LURecoverEnable <= LatchUp_Detect and DAQ_Enable;
 
 process (clk_100M, SystemRst)
 begin
@@ -808,7 +857,8 @@ begin
 end process;
 
 LU_Recover  : LURecover
-generic map (   lu_time_normal  => x"00000fa0",    -- 40 us
+generic map (   enable_ila      => ENABLE_ILA,
+                lu_time_normal  => x"00000fa0",    -- 40 us
                 off_time_normal => x"000fa000",    -- 10.24 ms
                 on_time_normal  => x"000fa000",    -- 10.24 ms
                 lu_time_debug   => x"1dcd6500",    -- 5 s
@@ -817,12 +867,50 @@ generic map (   lu_time_normal  => x"00000fa0",    -- 40 us
 Port map    (   clk         => clk_100M,
                 rst         => SystemRst,
                 hit_flag    => hit_flag,
-                enable      => LatchUp_Detect,
+                enable      => LURecoverEnable,
                 time_debug  => LU_TimeDebug,
                 dac_run     => DAC_Run,
                 ap_on       => AP_ON_LatchUp,
                 dac_ctrl    => DAC_Set_LatchUp,
                 recover_busy => LatchUpRecoverBusy  );
+
+gen_main_ila : if ENABLE_ILA generate
+Main_LURecover_ILA : ila_main_LURecover
+port map (
+    clk        => clk_200M,
+    probe0(0)  => SystemRst,
+    probe1(0)  => hit_flag,
+    probe2     => hit_16,
+    probe3(0)  => LatchUp_Detect,
+    probe4(0)  => DAQ_Enable,
+    probe5(0)  => LatchUpRecoverBusy,
+    probe6(0)  => DAQ_Run,
+    probe7(0)  => LU_TimeDebug,
+    probe8(0)  => AP_ON_RBCP,
+    probe9(0)  => AP_ON_LatchUp,
+    probe10(0) => AP_ON,
+    probe11(0) => DAC_Set_RBCP,
+    probe12(0) => DAC_Set_LatchUp,
+    probe13(0) => DAC_Set,
+    probe14(0) => DAC_Run,
+    probe15(0) => Vth_Set,
+    probe16(0) => Vth_Run,
+    probe17    => Vth_Ch,
+    probe18    => Vth_Data,
+    probe19(0) => Vth_Sync,
+    probe20(0) => Vth_Clk,
+    probe21(0) => Vth_SD,
+    probe22(0) => ADC_BIAS_Set,
+    probe23(0) => ADC_BIAS_Run,
+    probe24(0) => rbcp_act,
+    probe25(0) => rbcp_we,
+    probe26(0) => rbcp_re,
+    probe27    => rbcp_addr,
+    probe28    => rbcp_wd,
+    probe29(0) => rbcp_ack,
+    probe30    => rbcp_rd
+);
+end generate;
 
 ---- Analog Power Off
 --process (clk_100M, SystemRst, LatchUp_Recover)
@@ -1299,9 +1387,9 @@ ADC_BIAS_DATA_OB    : OBUF	generic map	( IOSTANDARD => "LVCMOS33",	DRIVE => 4,		
 -- st_sys_rst は SiTCP のリセット信号。
 -- INIT_LAN8810 の O_RESET と接続されていて、PHYの初期化プロセスを完了するとSiTCPのリセットが解除される。
 
-process(clk_200M, locked)
+process(clk_200M, sys_reset)
 begin
-    if locked='0' then
+    if sys_reset='1' then
         st_cnt_clk              <= '0' & x"c6";
     elsif clk_200M'event and clk_200M='1' then
         if st_cnt_clk(8)='1' then
@@ -1312,9 +1400,9 @@ begin
     end if;
 end process;
 
-process (clk_200M, locked)
+process (clk_200M, sys_reset)
 begin
-    if locked='0' then
+    if sys_reset='1' then
         st_cnt_rst              <= '0';
     elsif clk_200M'event and clk_200M='1' then
         st_cnt_rst              <= st_cnt_clk(8);
@@ -1428,7 +1516,7 @@ port map    (   CLK             => clk_200M,
 
 SlwCtrl:    RBCP_REG
 port map (  clock           => clk_200M,
-            reset           => SiTCP_Reset,
+            reset           => rbcp_reset,
             rbcp_act        => rbcp_act,
             rbcp_addr       => rbcp_addr,
             rbcp_wd         => rbcp_wd,

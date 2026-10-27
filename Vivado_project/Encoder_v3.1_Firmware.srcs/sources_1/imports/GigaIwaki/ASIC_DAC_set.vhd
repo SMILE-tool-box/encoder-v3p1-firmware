@@ -102,10 +102,10 @@ begin
 	if RST='1' then
 		reg_Run				<= '0';
 	elsif CLK'event and CLK='1' then
-		if ACT='1' then
-			reg_Run			<= '1';
-		elsif reg_WE='0' and dly_we='1' then
+		if reg_WE='0' and dly_we='1' then
 			reg_Run			<= '0';
+		elsif ACT='1' and regState="00" then
+			reg_Run			<= '1';
 		end if;
 	end if;
 end process;

@@ -127,6 +127,14 @@ architecture Behavioral of RBCP_REG is
     signal  LU_TimeDebugReg     : std_logic;
     signal  LU_RegAddr          : std_logic;
 
+    -- Mirror committed configuration writes, with an independent read port for
+    -- each serial engine. Like the BRAM, these values survive a SiTCP reset.
+    type asic_config_t is array (0 to 127) of std_logic_vector(7 downto 0);
+    type pair_config_t is array (0 to 1) of std_logic_vector(7 downto 0);
+    signal asic_config : asic_config_t := (others => (others => '0'));
+    signal vth_config : pair_config_t := (others => (others => '0'));
+    signal adc_config : pair_config_t := (others => (others => '0'));
+
 begin
 
 LU_TimeDebug    <= LU_TimeDebugReg;
@@ -245,63 +253,71 @@ begin
     end if;
 end process;
 
+-- RBCP keeps ownership of the original RAM; DAC reads cannot steal its port.
 process (clock, reset)
 begin
     if reset='1' then
-        bufAddr             <= (others => '0');
-        bufWe(0)            <= '0';
-        bufDin              <= (others => '0');
-        bufDout             <= (others => '1');
-		DAC_Data			<= (others => '0');
-        Vth_Data            <= (others => '0');
-        ADC_BIAS_Data       <= (others => '0');
-    elsif clock'event and clock='1' then
+        bufAddr <= (others => '0');
+        bufWe <= "0";
+        bufDin <= (others => '0');
+        bufDout <= (others => '1');
+    elsif rising_edge(clock) then
         if rbcp_act='1' then
-            bufAddr         <= irAddr ( 7 downto 0);
-            bufWe(0)        <= irWe and valid_flag and (not (ctrl_flag or ctrl_flag2 or ctrl_flag3)) and (not LU_RegAddr);
-            bufDin          <= irWd;
+            bufAddr <= irAddr(7 downto 0);
+            bufWe(0) <= irWe and valid_flag and
+                        (not (ctrl_flag or ctrl_flag2 or ctrl_flag3)) and (not LU_RegAddr);
+            bufDin <= irWd;
             if irAddr=x"000000f8" then
-                bufDout     <= LU_RecoverCount;
+                bufDout <= LU_RecoverCount;
             elsif irAddr=x"000000f9" then
-                bufDout     <= "0000000" & LU_TimeDebugReg;
+                bufDout <= "0000000" & LU_TimeDebugReg;
             else
-                bufDout     <= regDout;
+                bufDout <= regDout;
             end if;
-			DAC_Data		<= (others => '0');
-            Vth_Data        <= (others => '0');
-            ADC_BIAS_Data   <= (others => '0');
-		elsif DAC_ctrl_Buf='1' then
-			bufAddr			<= DAC_Ch_Buf;
-			bufWe(0)		<= '0';
-			bufDin			<= (others => '0');
-			bufDout			<= (others => '1');
-			DAC_Data		<= regDout;
-			Vth_Data		<= (others => '0');
-            ADC_BIAS_Data   <= (others => '0');
-        elsif Vth_ctrl_Buf='1' then
-            bufAddr         <= Vth_Ch_Buf;
-            bufWe(0)        <= '0';
-            bufDin          <= (others => '0');
-            bufDout         <= (others => '1');     
-			DAC_Data		<= (others => '0');       
-            Vth_Data        <= regDout;
-            ADC_BIAS_Data   <= (others => '0');
-        elsif ADC_ctrl_Buf='1' then
-            bufAddr         <= ADC_BIAS_Ch_Buf;
-            bufWe(0)        <= '0';
-            bufDin          <= (others => '0');
-            bufDout         <= (others => '1');
-            DAC_Data        <= (others => '0');
-            Vth_Data        <= (others => '0');
-            ADC_BIAS_Data   <= regDout;
         else
-            bufAddr         <= (others => '0');
-            bufWe(0)        <= '0';
-            bufDin          <= (others => '0');
-            bufDout         <= (others => '1');
-			DAC_Data		<= (others => '0');
-            Vth_Data        <= (others => '0');
-            ADC_BIAS_Data   <= (others => '0');
+            bufAddr <= (others => '0');
+            bufWe <= "0";
+            bufDin <= (others => '0');
+            bufDout <= (others => '1');
+        end if;
+    end if;
+end process;
+
+-- Use exactly the write-enable/address/data that reach the original BRAM.
+-- No reset on the arrays: a control reset must not erase saved DAC settings.
+process (clock)
+begin
+    if rising_edge(clock) then
+        if regWe(0)='1' then
+            if regAddr(7)='0' then
+                asic_config(to_integer(unsigned(regAddr(6 downto 0)))) <= regDin;
+            elsif regAddr=x"80" or regAddr=x"81" then
+                vth_config(to_integer(unsigned(regAddr(0 downto 0)))) <= regDin;
+            elsif regAddr=x"82" or regAddr=x"83" then
+                adc_config(to_integer(unsigned(regAddr(0 downto 0)))) <= regDin;
+            end if;
+        end if;
+    end if;
+end process;
+
+process (clock, reset)
+begin
+    if reset='1' then
+        DAC_Data <= (others => '0');
+        Vth_Data <= (others => '0');
+        ADC_BIAS_Data <= (others => '0');
+    elsif rising_edge(clock) then
+        DAC_Data <= (others => '0');
+        Vth_Data <= (others => '0');
+        ADC_BIAS_Data <= (others => '0');
+        if DAC_Ch_Buf(7)='0' then
+            DAC_Data <= asic_config(to_integer(unsigned(DAC_Ch_Buf(6 downto 0))));
+        end if;
+        if Vth_Ch_Buf=x"80" or Vth_Ch_Buf=x"81" then
+            Vth_Data <= vth_config(to_integer(unsigned(Vth_Ch_Buf(0 downto 0))));
+        end if;
+        if ADC_BIAS_Ch_Buf=x"82" or ADC_BIAS_Ch_Buf=x"83" then
+            ADC_BIAS_Data <= adc_config(to_integer(unsigned(ADC_BIAS_Ch_Buf(0 downto 0))));
         end if;
     end if;
 end process;
